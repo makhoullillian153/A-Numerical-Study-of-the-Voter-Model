@@ -4,6 +4,8 @@
 library(ggplot2)
 library(gganimate)
 library(gifski)
+library(MASS)
+library(magick)
 theme_set(theme_bw())
 
 # classic voter model, used in VM theory.R file
@@ -332,7 +334,7 @@ VM_func_noBound <- function(fixed.row, col.range){
   sec <- numeric()
   
   for(i in col.range){
-    time <- VM_noBound(fixed.row, i, 1000)
+    time <- VM_noBound(fixed.row, i, 100000)
     avg <- append(avg,mean(time))
     var <- append(var,var(time))
     sec <- append(sec,mean(time^2))
@@ -809,7 +811,7 @@ VM_diag <- function(row, col, s, pOne = 0.5){
                       c(1,1),c(1,-1),c(-1,1),c(-1,-1))
     
     
-    index <- sample(1:4,1, replace = T)
+    index <- sample(1:8,1, replace = T)
     a <- i + movements[[index]][1]
     b <- j + movements[[index]][2]
     
@@ -874,7 +876,7 @@ VM_diag_func <- function(fixed.row, col.range){
   
   for(i in col.range){
     print(i)
-    time <- VM_diag(fixed.row, i, 1000)
+    time <- VM_diag(fixed.row, i, 100000)
     avg <- append(avg,mean(time))
     var <- append(var,var(time))
     sec <- append(sec,mean(time^2))
@@ -887,12 +889,10 @@ VM_diag_func <- function(fixed.row, col.range){
 # col: number of columns
 # s: number of observations
 # pOne: probability that a spot in the matrix is initialized with '1'
-# pChange.C: probability that an individual is willing to switch opinions after
-         # interacting with a confident neighbor
-# pChange.U: probability that an individual is willing to switch opinions after
-         # interacting with an unsure neighbor
 # We will assume boundaries, and that we cannot interact diagonally
-my_conf_marg <- function(row, col, s, pOne = 0.5, pChange.C = 1, pChange.U = 0){
+# Each individual will have their own probability of being influenced by a confident voter
+# (probability 0 for being convinced by an unsure voter)
+my_conf_marg <- function(row, col, s, pOne = 0.5){
   # selects neighbor depending on if an individual is in the middle, edge, or corner
   neighbor <- function(nbhd,i,j){
     a <- 0
@@ -923,6 +923,8 @@ my_conf_marg <- function(row, col, s, pOne = 0.5, pChange.C = 1, pChange.U = 0){
     nbhd <- matrix(data = states, nrow = row, ncol = col)
     states <- sample(c(replicate(ceiling(N/2),'c'),replicate(ceiling(N/2), 'u')),N,replace = FALSE)
     confidence <- matrix(data = states, nrow = row, ncol = col)
+    change <- matrix(data = runif(N), nrow = row, ncol = col) # probability that an individual is willing to switch opinions after
+                                                              # interacting with a confident neighbor
     
     while(TRUE){
       
@@ -940,21 +942,21 @@ my_conf_marg <- function(row, col, s, pOne = 0.5, pChange.C = 1, pChange.U = 0){
       lst <- neighbor(nbhd, i, j)
       neighb <- nbhd[lst[1],lst[2]]
       
-      
-      if(indiv == neighb & confidence[lst[1],lst[2]] == 'c'){ # same opinion & neighbor is confidence
-        confidence[i,j] <- 'c'
-      } else{ 
-        if(confidence[i,j] == 'c' & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes unsure
-          confidence[i,j] <- 'u'
-        } else{ # indiv changes state
-          if(indiv != neighb & confidence[i,j] == 'u'){
-            if(confidence[lst[1],lst[2]] == 'c'){
-              nbhd[i,j] <- neighb
+      if(runif(1) < change[i,j]){  
+        if(indiv == neighb & confidence[lst[1],lst[2]] == 'c'){ # same opinion & neighbor is confidence
+          confidence[i,j] <- 'c'
+        } else{ 
+          if(confidence[i,j] == 'c' & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes unsure
+            confidence[i,j] <- 'u'
+          } else{ # indiv changes state
+            if(indiv != neighb & confidence[i,j] == 'u'){
+              if(confidence[lst[1],lst[2]] == 'c'){
+                nbhd[i,j] <- neighb
+              }
             }
           }
         }
       }
-      
       
       consensusT[k] <- consensusT[k] + 1
     }
@@ -966,4 +968,154 @@ my_conf_marg <- function(row, col, s, pOne = 0.5, pChange.C = 1, pChange.U = 0){
 # same parameters as my_conf_marg
 my_conf_extr <- function(row, col, s, pOne = 0.5, pChange.C = 1, pChange.U = 0){
   
+}
+
+couplingVM <- function(row, col, pOne = 0.5){
+  
+  # select a neighbor using classic method: up/down/left/right
+  neighborC <- function(nbhd,i,j){
+    
+    # possible movements (up/down/left/right)
+    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
+    index <- sample(1:4,1, replace = T)
+    
+    # coordinates of neighbor
+    a <- i + movements[[index]][1]
+    b <- j + movements[[index]][2]
+    
+    # remove boundaries
+    if(a == 0){
+      a <- nrow(nbhd)
+    } 
+    if(a == nrow(nbhd) + 1){
+      a <- 1
+    }
+    if(b == 0){
+      b <- ncol(nbhd)
+    }
+    if(b == ncol(nbhd) + 1){
+      b <- 1
+    }
+    
+    return(c(a,b))
+  }
+  
+  # select a neighbor, but now, in addition to classic moves, we can move diagonally
+  neighborD <- function(nbhd,i,j){
+    
+    # possible movements
+    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0),
+                      c(1,1),c(1,-1),c(-1,1),c(-1,-1))
+    index <- sample(1:8,1, replace = T)
+    
+    # coordinates of neighbor
+    a <- i + movements[[index]][1]
+    b <- j + movements[[index]][2]
+    
+    # remove boundaries
+    if(a == 0){
+      a <- nrow(nbhd)
+    } 
+    if(a == nrow(nbhd) + 1){
+      a <- 1
+    }
+    if(b == 0){
+      b <- ncol(nbhd)
+    }
+    if(b == ncol(nbhd) + 1){
+      b <- 1
+    }
+    
+    return(c(a,b))
+  }
+  
+  # k <- 1 # for animation
+  N <- row*col # total number of particles
+  
+  # percent of "1"s in each model
+  percentOne.classic <- numeric()
+  percentOne.diag <- numeric()
+  
+  # initialize each model with different set of states
+  states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne, pOne))
+  nbhd.classic <- matrix(data = states, nrow = row, ncol = col)
+  
+  states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne, pOne))
+  nbhd.diag <- matrix(data = states, nrow = row, ncol = col)
+  
+  # record initial number of "1"s in each model
+  percentOne.classic[1] <- sum(nbhd.classic == 1)/N
+  percentOne.diag[1] <- sum(nbhd.diag == 1)/N
+  
+  # # record initial states for animation
+  # nbhd.df.classic <- data.frame(reshape2::melt(nbhd.classic), k = replicate(N,k))
+  # nbhd.df.diag <- data.frame(reshape2::melt(nbhd.classic), k = replicate(N,k))
+  
+  # run until either of the models reach consensus
+  while(TRUE){
+    k <- k + 1
+    
+    if(sum(nbhd.classic) == N | sum(nbhd.classic) == 0){
+      break;
+    }
+    if(sum(nbhd.diag) == N | sum(nbhd.diag) == 0){
+      break;
+    }
+    
+    # randomly select an individual
+    i <- sample(c(1:row), 1)
+    j <- sample(c(1:col), 1)
+    
+    
+    # select a neighbor
+    lst <- neighborC(nbhd.classic, i, j)
+    a <- lst[1]
+    b <- lst[2]
+    
+    nbhd.classic[i,j] <- nbhd.classic[a,b]
+    
+    lst <- neighborD(nbhd.diag, i, j)
+    a <- lst[1]
+    b <- lst[2]
+    
+    nbhd.diag[i,j] <- nbhd.diag[a,b]
+    
+    percentOne.classic <- append(percentOne.classic, sum(nbhd.classic == 1)/N)
+    percentOne.diag <- append(percentOne.diag, sum(nbhd.diag == 1)/N)
+    
+    # nbhd.df.classic <- rbind(nbhd.df.classic, data.frame(reshape2::melt(nbhd.classic), k = replicate(N, k)))
+    # nbhd.df.diag <- rbind(nbhd.df.diag, data.frame(reshape2::melt(nbhd.diag), k = replicate(N, k)))
+  }
+  
+  # # create side-by-side animation
+  # anim1 <- ggplot(data = nbhd.df.classic, mapping = aes(x = Var2, y = Var1)) + 
+  #   geom_point(aes(size = 2, color = value)) +
+  #   scale_x_continuous(name = "column number", breaks = 1:col) +
+  #   scale_y_continuous(name = "row number", breaks = 1:row) +
+  #   scale_colour_gradient(low = "yellow", high = "blue") +
+  #   labs(title = "Classic Movements") +
+  #   transition_time(nbhd.df.classic$k)
+  #  
+  # anim2 <- ggplot(data = nbhd.df.diag, mapping = aes(x = Var2, y = Var1)) + 
+  #   geom_point(aes(size = 2, color = value)) +
+  #   scale_x_continuous(name = "column number", breaks = 1:col) +
+  #   scale_y_continuous(name = "row number", breaks = 1:row) +
+  #   scale_colour_gradient(low = "yellow", high = "blue") +
+  #   labs(title = "Diagonal Movements") +
+  #   transition_time(nbhd.df.diag$k)
+  # 
+  # anim.classic <- animate(anim1, nframes = 100, renderer = magick_renderer())
+  # 
+  # anim.diag <- animate(anim2, nframes = 100, renderer = magick_renderer())
+  # 
+  # final.anim <- image_append(c(anim.classic[1],anim.diag[1]))
+  # 
+  # for(i in 2:100){
+  #   combined <- image_append(c(anim.classic[i],anim.diag[i]))
+  #   final.anim <- append(final.anim,combined)
+  # }
+  #
+  # anim_save("coupling.gif", final.anim)
+  
+  return(c(percentOne.classic, percentOne.diag))
 }
