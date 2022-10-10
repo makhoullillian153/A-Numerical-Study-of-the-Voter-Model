@@ -923,8 +923,8 @@ my_conf_marg <- function(row, col, s, pOne = 0.5){
     nbhd <- matrix(data = states, nrow = row, ncol = col)
     states <- sample(c(replicate(ceiling(N/2),'c'),replicate(ceiling(N/2), 'u')),N,replace = FALSE)
     confidence <- matrix(data = states, nrow = row, ncol = col)
-    change <- matrix(data = runif(N), nrow = row, ncol = col) # probability that an individual is willing to switch opinions after
-                                                              # interacting with a confident neighbor
+    change <- matrix(data = runif(N), nrow = row, ncol = col) # probability that an individual is willing to switch
+                                                              # opinions after interacting with a confident neighbor
     
     while(TRUE){
       
@@ -967,8 +967,106 @@ my_conf_marg <- function(row, col, s, pOne = 0.5){
 
 # same parameters as my_conf_marg
 my_conf_extr <- function(row, col, s, pOne = 0.5, pChange.C = 1, pChange.U = 0){
+  # selects neighbor depending on if an individual is in the middle, edge, or corner
+  neighbor <- function(nbhd,i,j){
+    a <- 0
+    b <- 0
+    
+    # possible movements (up/down/left/right)
+    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
+    
+    while(a <= 0 | b <= 0){
+      index <- sample(1:4,1, replace = T)
+      a <- i + movements[[index]][1]
+      b <- j + movements[[index]][2]
+      
+      if( a > nrow(nbhd) | b > ncol(nbhd)){
+        a <- 0
+        b <- 0
+      }
+    }
+    
+    return(c(a,b))
+  }
   
+  N <- row*col
+  consensusT <- numeric(s)
+  
+  for(k in 1:s){
+    states <- sample(c(0,1), N, replace = TRUE)
+    nbhd <- matrix(data = states, nrow = row, ncol = col)
+    states <- sample(c(replicate(ceiling(N/2),'c'),replicate(ceiling(N/2), 'u')),N,replace = FALSE)
+    confidence <- matrix(data = states, nrow = row, ncol = col)
+    change <- matrix(data = runif(N), nrow = row, ncol = col) # probability that an individual is willing to switch
+                                                              # opinions after interacting with a confident neighbor
+    
+    while(TRUE){
+      
+      if(sum(nbhd) == N | sum(nbhd) == 0){
+        break;
+      }
+      
+      # randomly select an individual
+      i <- sample(1:row, 1)
+      j <- sample(1:col, 1)
+      
+      indiv <- nbhd[i,j]
+      
+      # select a neighbor
+      lst <- neighbor(nbhd, i, j)
+      neighb <- nbhd[lst[1],lst[2]]
+      
+      if(runif(1) < change[i,j]){
+        if(indiv == neighb & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes confident
+          confidence[i,j] <- 'c'
+        } else{ 
+          if(confidence[i,j] == 'c' & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes unsure
+            if(indiv != neighb){
+              confidence[i,j] <- 'u'
+            }
+          } else{ # indiv changes state and becomes confidence in new state
+            if(confidence[i,j] == 'u' & confidence[lst[1],lst[2]] == 'c'){
+              if(indiv != neighb){
+                nbhd[i,j] <- neighb
+                confidence[i,j] <- 'c'
+              }
+            }
+          }
+        }
+      }
+      
+      consensusT[k] <- consensusT[k] + 1
+    }
+  }
+  
+  return(consensusT)
 }
+
+my_conf_func <- function(fixed.row, col.range){
+  avg_m <- numeric()
+  avg_e <- numeric()
+  var_m <- numeric()
+  var_e <- numeric()
+  sec_m <- numeric()
+  sec_e <- numeric()
+  
+  for(i in col.range){
+    print(i)
+    time_m <- my_conf_marg(fixed.row, i, 1000)
+    time_e <- my_conf_extr(fixed.row, i, 1000)
+    avg_m[i] <- mean(time_m)
+    avg_e[i] <- mean(time_e)
+    
+    var_m[i] <- var(time_m)
+    var_e[i] <- var(time_e)
+    
+    sec_m[i] <- mean(time_m^2)
+    sec_e[i] <- mean(time_e^2)
+  }
+  
+  return(c(avg_m, var_m, sec_m, avg_e, var_e, sec_e))
+}
+
 
 couplingVM <- function(row, col, pOne = 0.5){
   
@@ -1119,3 +1217,4 @@ couplingVM <- function(row, col, pOne = 0.5){
   
   return(c(percentOne.classic, percentOne.diag))
 }
+
