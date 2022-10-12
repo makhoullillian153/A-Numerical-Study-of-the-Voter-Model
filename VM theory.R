@@ -6,7 +6,6 @@
 
 # Prerequisites
 source("Voter model simulations.R")
-library(MASS)
 
 # Extract Q matrix from our transition matrix
 Q <- matrix(data = # 3          # 5          # 7           # 9           # 11         # 13          # 15          # 17          # 19         # 21
