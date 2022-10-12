@@ -347,7 +347,7 @@ VM_func_noBound <- function(fixed.row, col.range){
 
 # runs similiarly to CVM_marg, but
 # state/confidence only change if neighbor is confident
-CVM_marg_mod <- function(row,col,s){
+CVM_marg_mod <- function(row,col,s,change = 1){
   # selects neighbor depending on if an individual is in the middle, edge, or corner
   neighbor <- function(nbhd,i,j){
     a <- 0
@@ -395,21 +395,21 @@ CVM_marg_mod <- function(row,col,s){
       lst <- neighbor(nbhd, i, j)
       neighb <- nbhd[lst[1],lst[2]]
       
-      
-      if(indiv == neighb & confidence[lst[1],lst[2]] == 'c'){ # same opinion & neighbor is confidence
-        confidence[i,j] <- 'c'
-      } else{ 
-        if(confidence[i,j] == 'c' & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes unsure
-          confidence[i,j] <- 'u'
-        } else{ # indiv changes state
-          if(indiv != neighb & confidence[i,j] == 'u'){
-            if(confidence[lst[1],lst[2]] == 'c'){
-              nbhd[i,j] <- neighb
+      if(runif(1) <= change){
+        if(indiv == neighb & confidence[lst[1],lst[2]] == 'c'){ # same opinion & neighbor is confidence
+          confidence[i,j] <- 'c'
+        } else{ 
+          if(confidence[i,j] == 'c' & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes unsure
+            confidence[i,j] <- 'u'
+          } else{ # indiv changes state
+            if(indiv != neighb & confidence[i,j] == 'u'){
+              if(confidence[lst[1],lst[2]] == 'c'){
+                nbhd[i,j] <- neighb
+              }
             }
           }
         }
       }
-      
       
       consensusT[k] <- consensusT[k] + 1
     }
@@ -420,7 +420,7 @@ CVM_marg_mod <- function(row,col,s){
 
 # runs similiarly to CVM_extr, but
 # state/confidence only change if neighbor is confident
-CVM_extr_mod <- function(row, col, s){
+CVM_extr_mod <- function(row, col, s, change = 1){
   # selects neighbor depending on if an individual is in the middle, edge, or corner
   neighbor <- function(nbhd,i,j){
     a <- 0
@@ -468,24 +468,24 @@ CVM_extr_mod <- function(row, col, s){
       lst <- neighbor(nbhd, i, j)
       neighb <- nbhd[lst[1],lst[2]]
       
-      
-      if(indiv == neighb & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes confident
-        confidence[i,j] <- 'c'
-      } else{ 
-        if(confidence[i,j] == 'c' & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes unsure
-          if(indiv != neighb){
-            confidence[i,j] <- 'u'
-          }
-        } else{ # indiv changes state and becomes confidence in new state
-          if(confidence[i,j] == 'u' & confidence[lst[1],lst[2]] == 'c'){
+      if(runif(1) <= 1){
+        if(indiv == neighb & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes confident
+          confidence[i,j] <- 'c'
+        } else{ 
+          if(confidence[i,j] == 'c' & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes unsure
             if(indiv != neighb){
-              nbhd[i,j] <- neighb
-              confidence[i,j] <- 'c'
+              confidence[i,j] <- 'u'
+            }
+          } else{ # indiv changes state and becomes confidence in new state
+            if(confidence[i,j] == 'u' & confidence[lst[1],lst[2]] == 'c'){
+              if(indiv != neighb){
+                nbhd[i,j] <- neighb
+                confidence[i,j] <- 'c'
+              }
             }
           }
         }
       }
-      
       
       consensusT[k] <- consensusT[k] + 1
     }
@@ -497,7 +497,7 @@ CVM_extr_mod <- function(row, col, s){
 # input will be our fixed number of rows, and the various number of columns
 # runs CVM_marg_mod and CVM_extr_mod over the various sizes inputted by user
 # returns avg, var, and second moment of each matrix size for each model
-CVM_func_mod <- function(fixed.row, col.range){
+CVM_func_mod <- function(fixed.row, col.range, change = 1){
   avg_m <- numeric()
   avg_e <- numeric()
   var_m <- numeric()
@@ -507,8 +507,8 @@ CVM_func_mod <- function(fixed.row, col.range){
   
   for(i in col.range){
     print(i)
-    time_m <- CVM_marg_mod(fixed.row, i, 1000)
-    time_e <- CVM_extr_mod(fixed.row, i, 1000)
+    time_m <- CVM_marg_mod(fixed.row, i, 1000, change = change)
+    time_e <- CVM_extr_mod(fixed.row, i, 1000, change = change)
     avg_m[i] <- mean(time_m)
     avg_e[i] <- mean(time_e)
     
