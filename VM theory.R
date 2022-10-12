@@ -1,6 +1,15 @@
+# The following calculations are on the expected time to absorption of a 3x2 classic voter model
+# The purpose of this calculation is to confirm the validity of the empirical results the algorithm produces, that way,
+# the algorithm may be revised to fit alternative models without concern for implementation error.
+
+# For reference of which states are associated with which value, see states.pdf
+
+# Prerequisites
+source("Voter model simulations.R")
 library(MASS)
 
-Q <- matrix(data =                            # 7         # 9             # 11        # 13          # 15          # 17          # 19
+# Extract Q matrix from our transition matrix
+Q <- matrix(data = # 3          # 5          # 7           # 9           # 11         # 13          # 15          # 17          # 19         # 21
    c(25/36, 0    , 0   , 3/36 , 0   , 0    , 2/36 , 0    , 0    , 0    , 0    , 0   , 0    , 0    , 0    , 0    , 0    , 0    , 0    , 0   , 0    , 0    , # 1
      0    , 11/18, 0   , 0    , 0   , 0    , 3/18 , 1/18 , 0    , 0    , 0    , 0   , 0    , 0    , 0    , 0    , 0    , 0    , 0    , 0   , 0    , 0    , # 2
      6/18 , 0    , 7/18, 0    , 0   , 0    , 0    , 0    , 2/18 , 0    , 3/18 , 0   , 0    , 0    , 0    , 0    , 0    , 0    , 0    , 0   , 0    , 0    , # 3
@@ -25,6 +34,7 @@ Q <- matrix(data =                            # 7         # 9             # 11  
      0    , 0    , 0   , 0    , 0   , 0    , 0    , 0    , 0    , 0    , 0    , 0   , 0    , 0    , 2/36 , 0    , 0    , 0    , 3/36 , 0   , 0    , 25/36  # 22
      ), byrow = TRUE, nrow = 22, ncol = 22)
 
+# Extract R matrix from our transition matrix
 R <- matrix(data = 
               c( 6/36, 0,
                  3/18, 0,
@@ -50,6 +60,7 @@ R <- matrix(data =
                  0   , 6/36
               ), byrow = TRUE, nrow = 22, ncol = 2)
 
+# Probability of starting at each possible state
 probabilities <- matrix(c(4/64, # 1
                           2/64, # 2
                           2/64, # 3
@@ -74,18 +85,7 @@ probabilities <- matrix(c(4/64, # 1
                           4/64  # 22
 ), byrow = FALSE, ncol = 22, nrow = 1)
 
-ETC <- solve(diag(22) - Q) %*% rep(1,22)
-
-mat <-solve(diag(22) - Q) %*% R
-
-probabilities %*% ETC # 18.31765
-mean(VM(3,2, 10000)) # 18.3367
-
-# what if prob(1) = 0.75?
-mean(VM(3,2,0.75, 10000)) # 15.8951
-# clearly, if we make the probability bias towards one opinion, the number of steps to consensus decreases
-
-
+# Q and Probabilities matricies will be rearranged for symmetry
 Q2 <- Q
 Q2[7,] <- Q[8,]
 Q2[8,] <- Q[7,]
@@ -102,3 +102,12 @@ temp <- probabilities
 
 probabilities[,7] <- temp[,8]
 probabilities[,8] <- temp[,7]
+
+# Theoretical result
+ETC <- solve(diag(22) - Q) %*% rep(1,22)
+# mat <-solve(diag(22) - Q) %*% R
+
+probabilities %*% ETC # 18.31765
+
+# Empirical result
+mean(VM(3,2, 10000)) # 18.3367
