@@ -1,5 +1,3 @@
-## For each simulation, assume boundaries unless otherwise specifieds
-
 # prereqs
 library(ggplot2)
 library(gganimate)
@@ -8,34 +6,62 @@ library(MASS)
 library(magick)
 theme_set(theme_bw())
 
-# classic voter model, used in VM theory.R file
-# row: number of rows
-# col: number of columns
-# s: number of observations
-# pOne: probability that a spot in the matrix is initialized with '1'
-VM <- function(row, col, s, pOne = 0.5){
+# Uniformly selects neighbor of an individual using classic movements
+# Parameters
+  # nbhd: Matrix representing the different individuals
+  # i: Row number of individual
+  # j: Column number of individual
+  # boundaries: If TRUE, we assume boundaries, otherwise edges and corners are
+  #             linked to the other side of the matrix
+  #             Default is set to TRUE
+# Returns: row and column number of a randomly selected neighbor
+neighbor <- function(nbhd,i,j,boundaries = TRUE){
+  a <- 0
+  b <- 0
   
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
+  # possible movements (up/down/left/right)
+  movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
+  
+  if(boundaries){
     while(a <= 0 | b <= 0){
-        index <- sample(1:4,1, replace = T)
-        a <- i + movements[[index]][1]
-        b <- j + movements[[index]][2]
-        
-        if( a > nrow(nbhd) | b > ncol(nbhd)){
-          a <- 0
-          b <- 0
-        }
+      index <- sample(1:4,1, replace = T)
+      a <- i + movements[[index]][1]
+      b <- j + movements[[index]][2]
+      
+      if( a > nrow(nbhd) | b > ncol(nbhd)){
+        a <- 0
+        b <- 0
+      }
     }
-    
-    return(c(a,b))
+  } else {
+    if(a == 0){
+      a <- nrow(nbhd)
+    } 
+    if(a == nrow(nbhd) + 1){
+      a <- 1
+    }
+    if(b == 0){
+      b <- ncol(nbhd)
+    }
+    if(b == ncol(nbhd) + 1){
+      b <- 1
+    }
   }
+  
+  
+  return(c(a,b))
+}
+
+# Classic voter model, used in VM theory.R file
+# Assumes boundaries
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+  # pOne: Probability that a spot in the matrix is initialized with '1'
+  #       Default is 0.5
+# Returns: Time to consensus of each observation
+VM <- function(row, col, s, pOne = 0.5){
   
   N <- row*col
   consensusT <- numeric(s)
@@ -55,15 +81,12 @@ VM <- function(row, col, s, pOne = 0.5){
       i <- sample(c(1:row), 1)
       j <- sample(c(1:col), 1)
       
-      indiv <- nbhd[i,j]
-      
       # select a neighbor
       lst <- neighbor(nbhd, i, j)
       a <- lst[1]
       b <- lst[2]
       
       nbhd[i,j] <- nbhd[a,b]
-      
       
       consensusT[k] <- consensusT[k] + 1
     }
@@ -72,7 +95,10 @@ VM <- function(row, col, s, pOne = 0.5){
   return(consensusT)
 }
 
-# returns the expected time to consensus over k square matrices
+# Models VM as a function over square matrices
+# Parameters:
+  # k: Number of rows and number of columns
+# Returns: The expected time to consensus over k square matrices
 VM_func <- function(k){
   avg <- numeric(k)
   var <- numeric(k)
@@ -92,32 +118,13 @@ VM_func <- function(k){
 # ----- #
 
 # Confidence voter model - marginal
-# two states are still 0 and 1
-# there will be a matrix of same size that records each voters confidence to
-# the corresponding location
+# Assumes boundaries
+# Parameters:
+  # row: number of rows
+  # col: number of columns
+  # s: number of observations
+# Returns: Time to consensus of each observation
 CVM_marg <- function(row, col, s){
-  
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    while(a <= 0 | b <= 0){
-      index <- sample(1:4,1, replace = T)
-      a <- i + movements[[index]][1]
-      b <- j + movements[[index]][2]
-      
-      if( a > nrow(nbhd) | b > ncol(nbhd)){
-        a <- 0
-        b <- 0
-      }
-    }
-    
-    return(c(a,b))
-  }
   
   N <- row*col
   consensusT <- numeric(s)
@@ -164,28 +171,13 @@ CVM_marg <- function(row, col, s){
 }
 
 # Confidence voter model - extremal
+# Assumes boundaries
+# Parameters:
+  # row: number of rows
+  # col: number of columns
+  # s: number of observations
+# Returns: Time to consensus of each observation
 CVM_extr <- function(row, col, s){
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    while(a <= 0 | b <= 0){
-      index <- sample(1:4,1, replace = T)
-      a <- i + movements[[index]][1]
-      b <- j + movements[[index]][2]
-      
-      if( a > nrow(nbhd) | b > ncol(nbhd)){
-        a <- 0
-        b <- 0
-      }
-    }
-    
-    return(c(a,b))
-  }
   
   N <- row*col
   consensusT <- numeric(s)
@@ -232,7 +224,14 @@ CVM_extr <- function(row, col, s){
   return(consensusT)
 }
 
-# returns values for both marginal and extremal models
+# Models the time to consensus of the confidence voter models as a function 
+# over a number of columns
+# Parameters:
+  # fixed.row: Number of rows that will remain fixed through each simulation
+  # col.range: Range of columns. Each will be used twice: once in marginal, and 
+  #            once in extremal case.
+# Returns: Average time to, variance of, second moment of each dimension, for 
+#          both marginal and extremal cases (6 vectors total)
 CVM_func <- function(fixed.row, col.range){
   avg_m <- numeric()
   avg_e <- numeric()
@@ -243,8 +242,8 @@ CVM_func <- function(fixed.row, col.range){
   
   for(i in col.range){
     print(i)
-    time_m <- CVM_marg(fixed.row, i, 1000)
-    time_e <- CVM_extr(fixed.row, i, 1000)
+    time_m <- CVM_marg(fixed.row, i, 100)
+    time_e <- CVM_extr(fixed.row, i, 100)
     avg_m[i] <- mean(time_m)
     avg_e[i] <- mean(time_e)
     
@@ -260,36 +259,14 @@ CVM_func <- function(fixed.row, col.range){
 
 # ----- #
 
-# Runs the same as VM, however this time we assume no boundaries
+# Runs the same as VM, but
+# Assume NO boundaries
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+# Returns: Time to consensus of each observation
 VM_noBound <- function(row,col,s){
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    
-    index <- sample(1:4,1, replace = T)
-    a <- i + movements[[index]][1]
-    b <- j + movements[[index]][2]
-    
-    if(a == 0){
-      a <- nrow(nbhd)
-    } 
-    if(a == nrow(nbhd) + 1){
-      a <- 1
-    }
-    if(b == 0){
-      b <- ncol(nbhd)
-    }
-    if(b == ncol(nbhd) + 1){
-      b <- 1
-    }
-    
-    return(c(a,b))
-  }
   
   N <- row*col
   consensusT <- numeric(s)
@@ -308,10 +285,8 @@ VM_noBound <- function(row,col,s){
       i <- sample(1:row, 1)
       j <- sample(1:col, 1)
       
-      indiv <- nbhd[i,j]
-      
       # select a neighbor
-      lst <- neighbor(nbhd, i, j)
+      lst <- neighbor(nbhd, i, j, boundaries = F)
       a <- lst[1]
       b <- lst[2]
       
@@ -325,9 +300,13 @@ VM_noBound <- function(row,col,s){
   return(consensusT)
 }
 
-# input will be our fixed number of rows, and the various number of columns
-# runs VM_noBound over the various sizes inputted by user
-# returns avg, var, and second moment of each matrix size
+# Models the time to consensus of VM_noBound as a function over a number of 
+# columns
+# Parameters:
+  # fixed.row: Number of rows that will remain fixed through each simulation
+  # col.range: Range of columns
+# Returns: Average time to, variance of, second moment of each dimension 
+#          (3 vectors total)
 VM_func_noBound <- function(fixed.row, col.range){
   avg <- numeric()
   var <- numeric()
@@ -345,30 +324,21 @@ VM_func_noBound <- function(fixed.row, col.range){
 
 # ----- #
 
-# runs similiarly to CVM_marg, but
-# state/confidence only change if neighbor is confident
-CVM_marg_mod <- function(row,col,s,change = 1){
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    while(a <= 0 | b <= 0){
-      index <- sample(1:4,1, replace = T)
-      a <- i + movements[[index]][1]
-      b <- j + movements[[index]][2]
-      
-      if( a > nrow(nbhd) | b > ncol(nbhd)){
-        a <- 0
-        b <- 0
-      }
-    }
-    
-    return(c(a,b))
-  }
+# Confidence voter model - marginal (Version 2)
+# Runs similarly to CVM_marg, but state/confidence only change if neighbor is 
+# confident. 
+# We can also adjust the probability that an individual is convinced by a 
+# neighbor (conditioned on that neighbor being confident).
+# Assumes boundaries
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+  # change: Probability that an individual will be convinced by a confident 
+  #         neighbor (constant for each individual)
+  #         Default is 1
+# Returns: Time to consensus of each observation
+CVM_marg_V2 <- function(row,col,s,change = 1){
   
   N <- row*col
   consensusT <- numeric(s)
@@ -418,30 +388,21 @@ CVM_marg_mod <- function(row,col,s,change = 1){
   return(consensusT)
 }
 
-# runs similiarly to CVM_extr, but
-# state/confidence only change if neighbor is confident
-CVM_extr_mod <- function(row, col, s, change = 1){
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    while(a <= 0 | b <= 0){
-      index <- sample(1:4,1, replace = T)
-      a <- i + movements[[index]][1]
-      b <- j + movements[[index]][2]
-      
-      if( a > nrow(nbhd) | b > ncol(nbhd)){
-        a <- 0
-        b <- 0
-      }
-    }
-    
-    return(c(a,b))
-  }
+# Confidence voter model - extremal (Version 2)
+# Runs similarly to CVM_extr, but state/confidence only change if neighbor is 
+# confident. 
+# We can also adjust the probability that an individual is convinced by a 
+# neighbor (conditioned on that neighbor being confident).
+# Assumes boundaries
+# Parameters:
+# row: Number of rows
+# col: Number of columns
+# s: Number of observations
+# change: Probability that an individual will be convinced by a confident 
+#         neighbor (constant for each individual)
+#         Default is 1
+# Returns: Time to consensus of each observation
+CVM_extr_V2 <- function(row, col, s, change = 1){
   
   N <- row*col
   consensusT <- numeric(s)
@@ -468,7 +429,7 @@ CVM_extr_mod <- function(row, col, s, change = 1){
       lst <- neighbor(nbhd, i, j)
       neighb <- nbhd[lst[1],lst[2]]
       
-      if(runif(1) <= 1){
+      if(runif(1) <= change){
         if(indiv == neighb & confidence[lst[1],lst[2]] == 'c'){ # indiv becomes confident
           confidence[i,j] <- 'c'
         } else{ 
@@ -494,10 +455,18 @@ CVM_extr_mod <- function(row, col, s, change = 1){
   return(consensusT)
 }
 
-# input will be our fixed number of rows, and the various number of columns
-# runs CVM_marg_mod and CVM_extr_mod over the various sizes inputted by user
-# returns avg, var, and second moment of each matrix size for each model
-CVM_func_mod <- function(fixed.row, col.range, change = 1){
+# Models the time to consensus of the confidence voter models (Version 2) as a  
+# function over a number of columns
+# Parameters:
+  # fixed.row: Number of rows that will remain fixed through each simulation
+  # col.range: Range of columns. Each will be used twice: once in marginal, and 
+  #            once in extremal case.
+  # change: Probability that an individual will be convinced by a confident 
+  #         neighbor (constant for each individual)
+  #         Default is 1
+# Returns: Average time to, variance of, second moment of each dimension, for 
+#          both marginal and extremal cases (6 vectors total)
+CVM_func_V2 <- function(fixed.row, col.range, change = 1){
   avg_m <- numeric()
   avg_e <- numeric()
   var_m <- numeric()
@@ -507,8 +476,8 @@ CVM_func_mod <- function(fixed.row, col.range, change = 1){
   
   for(i in col.range){
     print(i)
-    time_m <- CVM_marg_mod(fixed.row, i, 1000, change = change)
-    time_e <- CVM_extr_mod(fixed.row, i, 1000, change = change)
+    time_m <- CVM_marg_V2(fixed.row, i, 1000, change = change)
+    time_e <- CVM_extr_V2(fixed.row, i, 1000, change = change)
     avg_m[i] <- mean(time_m)
     avg_e[i] <- mean(time_e)
     
@@ -525,29 +494,8 @@ CVM_func_mod <- function(fixed.row, col.range, change = 1){
 # ----- #
 
 # animating the classic voter model: special case 1
+# for fun
 VM_anim_special_1 <- function(row = 8, col = 12){
-  
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    while(a <= 0 | b <= 0){
-      index <- sample(1:4,1, replace = T)
-      a <- i + movements[[index]][1]
-      b <- j + movements[[index]][2]
-      
-      if( a > nrow(nbhd) | b > ncol(nbhd)){
-        a <- 0
-        b <- 0
-      }
-    }
-    
-    return(c(a,b))
-  }
   
   N <- row*col
   k <- 1
@@ -590,29 +538,8 @@ VM_anim_special_1 <- function(row = 8, col = 12){
 }
 
 # animating the classic voter model: special case 2
+# for fun
 VM_anim_special_2 <- function(row = 8, col = 12){
-  
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    while(a <= 0 | b <= 0){
-      index <- sample(1:4,1, replace = T)
-      a <- i + movements[[index]][1]
-      b <- j + movements[[index]][2]
-      
-      if( a > nrow(nbhd) | b > ncol(nbhd)){
-        a <- 0
-        b <- 0
-      }
-    }
-    
-    return(c(a,b))
-  }
   
   N <- row*col
   k <- 1
@@ -658,37 +585,16 @@ VM_anim_special_2 <- function(row = 8, col = 12){
 
 # ----- #
 
-# runs similarly to VM
-# but returns a vector of which value wins consensus in each simulation
+# Runs the same as VM_noBound, so
+# Assumes NO boundaries
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+  # pOne: Probability that a spot in the matrix is initialized with '1'
+  #       Default is 0.5
+# Returns: Vector of which value wins consensus in each simulation
 VM_win <- function(row,col,s, pOne = 0.5){
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    
-    index <- sample(1:4,1, replace = T)
-    a <- i + movements[[index]][1]
-    b <- j + movements[[index]][2]
-    
-    if(a == 0){
-      a <- nrow(nbhd)
-    } 
-    if(a == nrow(nbhd) + 1){
-      a <- 1
-    }
-    if(b == 0){
-      b <- ncol(nbhd)
-    }
-    if(b == ncol(nbhd) + 1){
-      b <- 1
-    }
-    
-    return(c(a,b))
-  }
   
   N <- row*col
   winner <- numeric(s)
@@ -716,7 +622,7 @@ VM_win <- function(row,col,s, pOne = 0.5){
       indiv <- nbhd[i,j]
       
       # select a neighbor
-      lst <- neighbor(nbhd, i, j)
+      lst <- neighbor(nbhd, i, j, boundaries = F)
       a <- lst[1]
       b <- lst[2]
       
@@ -728,37 +634,15 @@ VM_win <- function(row,col,s, pOne = 0.5){
   return(winner)
 }
 
-# runs similarly to VM
-# returns the percent of individuals exist with state '1'
+# Runs the same as VM_noBound, so
+# Assumes NO boundaries
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # pOne: Probability that a spot in the matrix is initialized with '1'
+  #       Default is 0.5
+# Returns: Percent of individuals exist with state '1' at each time
 VM_percents <- function(row,col, pOne = 0.5){
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    
-    index <- sample(1:4,1, replace = T)
-    a <- i + movements[[index]][1]
-    b <- j + movements[[index]][2]
-    
-    if(a == 0){
-      a <- nrow(nbhd)
-    } 
-    if(a == nrow(nbhd) + 1){
-      a <- 1
-    }
-    if(b == 0){
-      b <- ncol(nbhd)
-    }
-    if(b == ncol(nbhd) + 1){
-      b <- 1
-    }
-    
-    return(c(a,b))
-  }
   
   N <- row*col
   percentOne <- numeric()
@@ -783,7 +667,7 @@ VM_percents <- function(row,col, pOne = 0.5){
     indiv <- nbhd[i,j]
     
     # select a neighbor
-    lst <- neighbor(nbhd, i, j)
+    lst <- neighbor(nbhd, i, j, boundaries = F)
     a <- lst[1]
     b <- lst[2]
     
@@ -798,10 +682,18 @@ VM_percents <- function(row,col, pOne = 0.5){
 # ----- #
 
 # Individuals may now interact with neighbors "diagonal" to them
-# Assumes no boundaries
+# Uses an internal neighbor function, which includes both diagonal movements
+# and classic movements
+# Assumes NO boundaries
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+  # pOne: Probability that a spot in the matrix is initialized with '1'
+  #       Default is 0.5
+# Returns: Time to consensus of each observation
 VM_diag <- function(row, col, s, pOne = 0.5){
   
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
   neighbor <- function(nbhd,i,j){
     a <- 0
     b <- 0
@@ -866,9 +758,13 @@ VM_diag <- function(row, col, s, pOne = 0.5){
   return(consensusT)
 }
 
-# input will be our fixed number of rows, and the various number of columns
-# runs VM_diag over the various sizes inputted by user
-# returns avg, var, and second moment of each matrix size
+# Models the time to consensus of VM_diag as a function over a number of 
+# columns
+# Parameters:
+  # fixed.row: Number of rows that will remain fixed through each simulation
+  # col.range: Range of columns
+# Returns: Average time to, variance of, second moment of each dimension 
+#          (3 vectors total)
 VM_diag_func <- function(fixed.row, col.range){
   avg <- numeric()
   var <- numeric()
@@ -885,35 +781,20 @@ VM_diag_func <- function(fixed.row, col.range){
   return(c(avg, var, sec))
 }
 
-# row: number of rows
-# col: number of columns
-# s: number of observations
-# pOne: probability that a spot in the matrix is initialized with '1'
-# We will assume boundaries, and that we cannot interact diagonally
-# Each individual will have their own probability of being influenced by a confident voter
-# (probability 0 for being convinced by an unsure voter)
-my_conf_marg <- function(row, col, s, pOne = 0.5){
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    while(a <= 0 | b <= 0){
-      index <- sample(1:4,1, replace = T)
-      a <- i + movements[[index]][1]
-      b <- j + movements[[index]][2]
-      
-      if( a > nrow(nbhd) | b > ncol(nbhd)){
-        a <- 0
-        b <- 0
-      }
-    }
-    
-    return(c(a,b))
-  }
+# ----- #
+
+# Confidence voter model - marginal (Version 3)
+# Each individual will have their own probability of being influenced by a 
+# confident voter
+# Assumes boundaries, and only classic movements
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+  # pOne: Probability that a spot in the matrix is initialized with '1'
+  #       Default is 0.5
+# Returns: Time to consensus of each observation
+CVM_marg_V3 <- function(row, col, s, pOne = 0.5){
   
   N <- row*col
   consensusT <- numeric(s)
@@ -965,29 +846,18 @@ my_conf_marg <- function(row, col, s, pOne = 0.5){
   return(consensusT)
 }
 
-# same parameters as my_conf_marg
-my_conf_extr <- function(row, col, s, pOne = 0.5, pChange.C = 1, pChange.U = 0){
-  # selects neighbor depending on if an individual is in the middle, edge, or corner
-  neighbor <- function(nbhd,i,j){
-    a <- 0
-    b <- 0
-    
-    # possible movements (up/down/left/right)
-    movements <- list(c(0,1),c(0,-1),c(-1,0),c(1,0))
-    
-    while(a <= 0 | b <= 0){
-      index <- sample(1:4,1, replace = T)
-      a <- i + movements[[index]][1]
-      b <- j + movements[[index]][2]
-      
-      if( a > nrow(nbhd) | b > ncol(nbhd)){
-        a <- 0
-        b <- 0
-      }
-    }
-    
-    return(c(a,b))
-  }
+# Confidence voter model - extremal (Version 3)
+# Each individual will have their own probability of being influenced by a 
+# confident voter
+# Assumes boundaries, and only classic movements
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+  # pOne: Probability that a spot in the matrix is initialized with '1'
+  #       Default is 0.5
+# Returns: Time to consensus of each observation
+CVM_extr_V3 <- function(row, col, s, pOne = 0.5){
   
   N <- row*col
   consensusT <- numeric(s)
@@ -1042,7 +912,15 @@ my_conf_extr <- function(row, col, s, pOne = 0.5, pChange.C = 1, pChange.U = 0){
   return(consensusT)
 }
 
-my_conf_func <- function(fixed.row, col.range){
+# Models the time to consensus of the confidence voter models (Version 3) as a  
+# function over a number of columns
+# Parameters:
+  # fixed.row: Number of rows that will remain fixed through each simulation
+  # col.range: Range of columns. Each will be used twice: once in marginal, and 
+  #            once in extremal case.
+# Returns: Average time to, variance of, second moment of each dimension, for 
+#          both marginal and extremal cases (6 vectors total)
+CVM_func_V3 <- function(fixed.row, col.range){
   avg_m <- numeric()
   avg_e <- numeric()
   var_m <- numeric()
@@ -1052,8 +930,8 @@ my_conf_func <- function(fixed.row, col.range){
   
   for(i in col.range){
     print(i)
-    time_m <- my_conf_marg(fixed.row, i, 1000)
-    time_e <- my_conf_extr(fixed.row, i, 1000)
+    time_m <- CVM_marg_V3(fixed.row, i, 100)
+    time_e <- CVM_extr_V3(fixed.row, i, 100)
     avg_m[i] <- mean(time_m)
     avg_e[i] <- mean(time_e)
     
@@ -1064,10 +942,13 @@ my_conf_func <- function(fixed.row, col.range){
     sec_e[i] <- mean(time_e^2)
   }
   
+  
+  
   return(c(avg_m, var_m, sec_m, avg_e, var_e, sec_e))
 }
 
-
+# uses internal neighbor methods (no boundaries)
+# for fun
 couplingVM <- function(row, col, pOne = 0.5){
   
   # select a neighbor using classic method: up/down/left/right
