@@ -1099,3 +1099,81 @@ couplingVM <- function(row, col, pOne = 0.5){
   return(c(percentOne.classic, percentOne.diag))
 }
 
+noConsensus <- function(row, col, z, pOne = 0.5){
+  N <- row*col
+  consensusT <- 0
+  percentOne<- numeric()
+  
+  states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne,pOne))
+  nbhd <- matrix(data = states, nrow = row, ncol = col)
+  percentOne[1] <- sum(nbhd == 1)/N
+  
+  for(y in 1:z){
+    pChange <- c(sum(nbhd == 0)/N, sum(nbhd == 1)/N)
+    
+    if(sum(nbhd) == N | sum(nbhd) == 0){
+      break;
+    }
+    
+    # randomly select an individual
+    i <- sample(c(1:row), 1)
+    j <- sample(c(1:col), 1)
+    
+    # select a neighbor
+    lst <- neighbor(nbhd, i, j)
+    a <- lst[1]
+    b <- lst[2]
+    
+    if(pChange[nbhd[i,j] + 1] > runif(1)){
+      nbhd[i,j] <- nbhd[a,b]
+    }
+    
+    consensusT <- consensusT + 1
+    percentOne <- append(percentOne, sum(nbhd == 1)/N)
+    if(consensusT %% 1000 == 0){
+      print(consensusT)
+    }
+  }
+  
+  return(percentOne)
+}
+
+oneWins <- function(row, col){
+  N <- row*col
+  condition <- FALSE
+  while(!condition){
+    states <- sample(c(replicate(N-1, 0),1), N, replace = FALSE)
+    nbhd <- matrix(data = states, nrow = row, ncol = col)
+    consensusT <- 0
+    percentOne <- numeric()
+    percentOne[1] <- (sum(nbhd == 1)/N)
+    k <- 2
+    while(TRUE){
+      
+      if(sum(nbhd) == 0){
+        break
+      }
+      if(sum(nbhd) == N){
+        condition <- TRUE
+        break
+      }
+      
+      # randomly select an individual
+      i <- sample(c(1:row), 1)
+      j <- sample(c(1:col), 1)
+      
+      # select a neighbor
+      lst <- neighbor(nbhd, i, j)
+      a <- lst[1]
+      b <- lst[2]
+      
+      nbhd[i,j] <- nbhd[a,b]
+      
+      percentOne[k] <- (sum(nbhd == 1)/N)
+      consensusT <- consensusT + 1
+      k <- k + 1
+    }
+  }
+  
+  return(percentOne)
+}
