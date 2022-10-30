@@ -1202,13 +1202,13 @@ V4_time <- function(row, col, s, pOne = 0.5){
   #          (3 vectors total)
 V4_func <- function(fixed.row, col.range){
   avg <- numeric()
-  avg <- numeric()
   var <- numeric()
+  sec <- numeric()
   
   for(i in col.range){
     print(i)
     time <- V4_time(fixed.row, i, 1000)
-    avgm[i] <- mean(time)
+    avg[i] <- mean(time)
     var[i] <- var(time)
     sec[i] <- mean(time^2)
   }

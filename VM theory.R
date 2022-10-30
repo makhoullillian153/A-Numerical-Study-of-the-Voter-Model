@@ -177,4 +177,5 @@ ETC3.2 <- solve(diag(22) - Q3.2) %*% rep(1,22)
 probabilities %*% ETC3.2 # 160.3006
 
 # empirical result
-mean(noConsensus_time(3,2,10000)) # 161.6013
+set.seed(1)
+mean(noConsensus_time(3,2,10000)) # 159.7298
