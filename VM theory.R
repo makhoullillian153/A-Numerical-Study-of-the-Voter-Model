@@ -1,6 +1,11 @@
-# The following calculations are on the expected time to absorption of a 3x2 classic voter model
-# The purpose of this calculation is to confirm the validity of the empirical results the algorithm produces, that way,
-# the algorithm may be revised to fit alternative models without concern for implementation error.
+# The following calculations are on the expected time to absorption of a 3x2 
+# classic voter model, and version 4 of the modified voter models.
+# The purpose of this calculation is to confirm the validity of the empirical 
+# results the algorithm produces, that way,
+# the algorithm may be revised to fit alternative models without concern for 
+# implementation error.
+# In terms of the modified version, we use these calculations to detect a 
+# pattern and possibly use to support a rigorous argument.
 
 # For reference of which states are associated with which value, see states.pdf
 
@@ -32,6 +37,8 @@ Q <- matrix(data = # 3          # 5          # 7           # 9           # 11   
      0    , 0    , 0   , 0    , 0   , 0    , 0    , 0    , 0    , 0    , 0    , 0   , 0    , 0    , 3/18 , 1/18 , 0    , 0    , 0    , 0   , 11/18, 0    , # 21
      0    , 0    , 0   , 0    , 0   , 0    , 0    , 0    , 0    , 0    , 0    , 0   , 0    , 0    , 2/36 , 0    , 0    , 0    , 3/36 , 0   , 0    , 25/36  # 22
      ), byrow = TRUE, nrow = 22, ncol = 22)
+
+
 
 # Extract R matrix from our transition matrix
 R <- matrix(data = 
@@ -84,7 +91,8 @@ probabilities <- matrix(c(4/64, # 1
                           4/64  # 22
 ), byrow = FALSE, ncol = 22, nrow = 1)
 
-# Q and Probabilities matricies will be rearranged for symmetry
+# Q and Probabilities matrices will be rearranged for symmetry and to match 
+# what is labeled in states.pdf
 Q2 <- Q
 Q2[7,] <- Q[8,]
 Q2[8,] <- Q[7,]
@@ -109,4 +117,64 @@ ETC <- solve(diag(22) - Q) %*% rep(1,22)
 probabilities %*% ETC # 18.31765
 
 # Empirical result
-mean(VM(3,2, 10000)) # 18.3367
+set.seed(1)
+mean(VM(3,2, 10000)) # 18.1296
+
+# ----- #
+
+# 2x2 model - modified
+
+Q2.2 <- matrix(data = c(1/2,0,1/4,1/4,
+                        0,3/4,1/8,1/8,
+                        0,3/16,3/4,0,
+                        0,3/16,0,3/4),ncol=4,nrow = 4,byrow = T)
+
+R2.2 <- matrix(data = c(0,0,
+                        0,0,
+                        1/16,0,
+                        0,1/16), ncol = 2, nrow = 4, byrow = T)
+
+ETC2.2 <- solve(diag(4) - Q2.2) %*% rep(1,4)
+
+prob2.2 <- matrix(data = c(2/16,4/16,4/16,4/16), ncol = 4, nrow =1)
+
+prob2.2 %*% ETC2.2 # 25.75
+mean(noConsensus_time(2,2,100000)) # 25.69059
+
+# ----- #
+
+# 3x2 modified
+
+Q3.2 <- matrix(data =    # 3           # 5           # 7             # 9           # 11          # 13          # 15           # 17          # 19          # 21
+      c(185/216, 0     , 0    , 5/72 , 0    , 0    , 0     , 5/108 , 0    , 0    , 0    , 0    , 0    , 0    , 0     , 0    , 0    , 0    , 0    , 0    , 0     , 0      , # 1
+        0      , 85/108, 0    , 0    , 0    , 0    , 5/108 , 5/36  , 0    , 0    , 0    , 0    , 0    , 0    , 0     , 0    , 0    , 0    , 0    , 0    , 0     , 0      , # 2
+        1/9    , 0     , 19/27, 0    , 0    , 0    , 0     , 0     , 4/54 , 0    , 4/36 , 0    , 0    , 0    , 0     , 0    , 0    , 0    , 0    , 0    , 0     , 0      , # 3
+        1/18   , 0     , 0    , 47/54, 0    , 0    , 0     , 0     , 0    , 4/54 , 0    , 0    , 0    , 0    , 0     , 0    , 0    , 0    , 0    , 0    , 0     , 0      , # 4
+        1/9    , 0     , 0    , 0    , 19/27, 0    , 0     , 0     , 0    , 0    , 4/36 , 0    , 0    , 4/54 , 0     , 0    , 0    , 0    , 0    , 0    , 0     , 0      , # 5
+        1/18   , 1/18  , 0    , 0    , 0    , 35/54, 0     , 0     , 0    , 4/36 , 0    , 0    , 4/54 , 4/72 , 0     , 0    , 0    , 0    , 0    , 0    , 0     , 0      , # 6
+        0      , 4/54  , 0    , 0    , 0    , 0    , 19/27 , 0     , 0    , 0    , 0    , 0    , 4/18 , 0    , 0     , 0    , 0    , 0    , 0    , 0    , 0     , 0      , # 7
+        2/54   , 2/72  , 0    , 0    , 0    , 0    , 0     , 85/108, 4/72 , 4/72 , 0    , 0    , 4/108, 0    , 0     , 0    , 0    , 0    , 0    , 0    , 0     , 0      , # 8
+        0      , 0     , 1/36 , 0    , 0    , 0    , 0     , 1/12  , 7/9  , 0    , 0    , 0    , 0    , 0    , 1/12  , 0    , 0    , 0    , 0    , 1/36 , 0     , 0      , # 9
+        0      , 0     , 0    , 1/18 , 0    , 0    , 0     , 1/24  , 0    , 29/36, 0    , 0    , 0    , 0    , 1/24  , 0    , 0    , 0    , 1/18 , 0    , 0     , 0      , # 10
+        0      , 0     , 1/24 , 1/12 , 1/24 , 0    , 0     , 0     , 0    , 0    , 17/24, 0    , 0    , 0    , 1/18  , 1/24 , 1/36 , 0    , 0    , 0    , 0     , 0      , # 11
+        0      , 0     , 1/12 , 0    , 0    , 1/6  , 0     , 0     , 0    , 0    , 0    , 1/2  , 0    , 0    , 0     , 0    , 1/6  , 0    , 0    , 1/12 , 0     , 0      , # 12
+        0      , 0     , 0    , 0    , 0    , 1/36 , 1/24  , 1/18  , 0    , 0    , 0    , 0    , 17/24, 0    , 0     , 0    , 0    , 1/24 , 1/12 , 1/24 , 0     , 0      , # 13
+        0      , 0     , 0    , 0    , 1/18 , 1/24 , 0     , 1/12  , 0    , 0    , 0    , 0    , 0    , 23/36, 1/12  , 0    , 1/24 , 1/18 , 0    , 0    , 0     , 0      , # 14
+        0      , 0     , 0    , 0    , 0    , 0    , 0     , 0     , 4/72 , 4/72 , 4/108, 0    , 0    , 0    , 85/108, 0    , 0    , 0    , 0    , 0    , 2/72  , 2/54   , # 15
+        0      , 0     , 0    , 0    , 0    , 0    , 0     , 0     , 0    , 0    , 4/18 , 0    , 0    , 0    , 0     , 19/27, 0    , 0    , 0    , 0    , 4/54  , 0      , # 16
+        0      , 0     , 0    , 0    , 0    , 0    , 0     , 0     , 0    , 4/36 , 4/54 , 0    , 0    , 4/72 , 0     , 0    , 35/54, 0    , 0    , 0    , 1/18  , 1/18   , # 17
+        0      , 0     , 0    , 0    , 0    , 0    , 0     , 0     , 0    , 0    , 0    , 0    , 4/36 , 4/54 , 0     , 0    , 0    , 19/27, 0    , 0    , 0     , 1/9    , # 18
+        0      , 0     , 0    , 0    , 0    , 0    , 0     , 0     , 0    , 4/54 , 0    , 0    , 0    , 0    , 0     , 0    , 0    , 0    , 47/54, 0    , 0     , 1/18   , # 19
+        0      , 0     , 0    , 0    , 0    , 0    , 0     , 0     , 4/54 , 0    , 0    , 0    , 4/36 , 0    , 0     , 0    , 0    , 0    , 0    , 19/27, 0     , 1/9    , # 20
+        0      , 0     , 0    , 0    , 0    , 0    , 0     , 0     , 0    , 0    , 0    , 0    , 0    , 0    , 5/36  , 5/108, 0    , 0    , 0    , 0    , 85/108, 0      , # 21
+        0      , 0     , 0    , 0    , 0    , 0    , 0     , 0     , 0    , 0    , 0    , 0    , 0    , 0    , 5/108 , 0    , 0    , 0    , 5/72 , 0    , 0     , 185/216  # 22
+        ), byrow = TRUE, nrow = 22, ncol = 22)
+
+
+ETC3.2 <- solve(diag(22) - Q3.2) %*% rep(1,22)
+
+# theoretical result
+probabilities %*% ETC3.2 # 160.3006
+
+# empirical result
+mean(noConsensus_time(3,2,10000)) # 161.6013
