@@ -95,21 +95,19 @@ VM <- function(row, col, s, pOne = 0.5){
   return(consensusT)
 }
 
-# Models VM as a function over square matrices
-# Parameters:
-  # k: Number of rows and number of columns
-# Returns: The expected time to consensus over k square matrices
-VM_func <- function(k){
-  avg <- numeric(k)
-  var <- numeric(k)
-  sec <- numeric(k)
-  
-  for(i in 1:k){
+
+VM_func <- function(fixed.row, col.range){
+  avg <- numeric()
+  var <- numeric()
+  sec <- numeric()
+  j <- 1
+  for(i in col.range){
     print(i)
-    time <- VM(i, i, 100)
-    avg[i] <- mean(time)
-    var[i] <- var(time)
-    sec[i] <- mean(time^2)
+    time <- VM(fixed.row, i, 100)
+    avg[j] <- mean(time)
+    var[j] <- var(time)
+    sec[j] <- mean(time^2)
+    j <- j + 1
   }
   
   return(c(avg, var, sec))
@@ -930,8 +928,8 @@ CVM_func_V3 <- function(fixed.row, col.range){
   
   for(i in col.range){
     print(i)
-    time_m <- CVM_marg_V3(fixed.row, i, 100)
-    time_e <- CVM_extr_V3(fixed.row, i, 100)
+    time_m <- CVM_marg_V3(fixed.row, i, 1000)
+    time_e <- CVM_extr_V3(fixed.row, i, 1000)
     avg_m[i] <- mean(time_m)
     avg_e[i] <- mean(time_e)
     
@@ -1099,20 +1097,34 @@ couplingVM <- function(row, col, pOne = 0.5){
   return(c(percentOne.classic, percentOne.diag))
 }
 
-noConsensus <- function(row, col, z, pOne = 0.5){
-  N <- row*col
-  consensusT <- 0
-  percentOne<- numeric()
+# Modified Voter model - Version 4, used in VM theory.R file
+# Here, the probability of being convinced is dependent on the proportion of
+# agreeing voters. That is, if we have 3 individuals labeled "0" and 7 voters
+# labeled "1", a "0" voter has a probability of 3/10 of being convinced, and a
+# "1" voter has a probability of 7/10 of being convinced.
+# We only run 1 observation
+# Assumes boundaries
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # pOne: Probability that a spot in the matrix is initialized with '1'
+  #       Default is 0.5
+# Returns: Percent of population labeled "1" throughout the observation
+V4_percent <- function(row, col){
   
-  states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne,pOne))
+  N <- row*col
+  percentOne<- numeric()
+  consensus <- FALSE
+  
+  states <- sample(c(0,1), N, replace = TRUE, prob = replicate(n,1/n))
   nbhd <- matrix(data = states, nrow = row, ncol = col)
   percentOne[1] <- sum(nbhd == 1)/N
   
-  for(y in 1:z){
-    pChange <- c(sum(nbhd == 0)/N, sum(nbhd == 1)/N)
+  while(TRUE){
+    pChange <- c(sum(nbhd == 0)/N,sum(nbhd == 1)/N)
     
     if(sum(nbhd) == N | sum(nbhd) == 0){
-      break;
+      break
     }
     
     # randomly select an individual
@@ -1120,7 +1132,7 @@ noConsensus <- function(row, col, z, pOne = 0.5){
     j <- sample(c(1:col), 1)
     
     # select a neighbor
-    lst <- neighbor(nbhd, i, j)
+    lst <- neighbor(nbhd, i, j, boundaries = T)
     a <- lst[1]
     b <- lst[2]
     
@@ -1128,14 +1140,80 @@ noConsensus <- function(row, col, z, pOne = 0.5){
       nbhd[i,j] <- nbhd[a,b]
     }
     
-    consensusT <- consensusT + 1
     percentOne <- append(percentOne, sum(nbhd == 1)/N)
-    if(consensusT %% 1000 == 0){
-      print(consensusT)
-    }
   }
   
+  
   return(percentOne)
+}
+
+
+# Modified Voter model - Version 4, used in VM theory.R file
+# Here, the probability of being convinced is dependent on the proportion of
+# agreeing voters. That is, if we have 3 individuals labeled "0" and 7 voters
+# labeled "1", a "0" voter has a probability of 3/10 of being convinced, and a
+# "1" voter has a probability of 7/10 of being convinced.
+# Assumes boundaries
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+  # pOne: Probability that a spot in the matrix is initialized with '1'
+  #       Default is 0.5
+# Returns: Time to consensus of each observation
+V4_time <- function(row, col, s, pOne = 0.5){
+  N <- row*col
+  consensusT <- numeric(s)
+  for(k in 1:s){
+    states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne,pOne))
+    nbhd <- matrix(data = states, nrow = row, ncol = col)
+    
+    while(TRUE){
+      pChange <- c(sum(nbhd == 0)/N, sum(nbhd == 1)/N)
+      
+      if(sum(nbhd) == N | sum(nbhd) == 0){
+        break
+      }
+      
+      # randomly select an individual
+      i <- sample(c(1:row), 1)
+      j <- sample(c(1:col), 1)
+      
+      # select a neighbor
+      lst <- neighbor(nbhd, i, j)
+      a <- lst[1]
+      b <- lst[2]
+      
+      if(pChange[nbhd[i,j] + 1] > runif(1)){
+        nbhd[i,j] <- nbhd[a,b]
+      }
+      
+      consensusT[k] <- consensusT[k] + 1 
+    }
+  }
+  return(consensusT)
+}
+
+# Models the time to consensus of VM_4 as a function over a number of columns
+# Parameters:
+  # fixed.row: Number of rows that will remain fixed through each simulation
+  # col.range: Range of columns
+# Returns: Average time to, variance of, second moment of each dimension 
+  #          (3 vectors total)
+V4_func <- function(fixed.row, col.range){
+  avg <- numeric()
+  avg <- numeric()
+  var <- numeric()
+  
+  for(i in col.range){
+    print(i)
+    time <- V4_time(fixed.row, i, 1000)
+    avgm[i] <- mean(time)
+    var[i] <- var(time)
+    sec[i] <- mean(time^2)
+  }
+  
+  return(c(avg, var, sec))
 }
 
 oneWins <- function(row, col){
