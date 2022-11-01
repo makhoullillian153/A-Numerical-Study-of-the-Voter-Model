@@ -103,7 +103,7 @@ VM_func <- function(fixed.row, col.range){
   j <- 1
   for(i in col.range){
     print(i)
-    time <- VM(fixed.row, i, 100)
+    time <- VM(fixed.row, i, 10000)
     avg[j] <- mean(time)
     var[j] <- var(time)
     sec[j] <- mean(time^2)
@@ -311,7 +311,8 @@ VM_func_noBound <- function(fixed.row, col.range){
   sec <- numeric()
   
   for(i in col.range){
-    time <- VM_noBound(fixed.row, i, 100000)
+    print(i)
+    time <- VM_noBound(fixed.row, i, 10000)
     avg <- append(avg,mean(time))
     var <- append(var,var(time))
     sec <- append(sec,mean(time^2))
@@ -1207,51 +1208,11 @@ V4_func <- function(fixed.row, col.range){
   
   for(i in col.range){
     print(i)
-    time <- V4_time(fixed.row, i, 1000)
+    time <- V4_time(fixed.row, i, 10000)
     avg[i] <- mean(time)
     var[i] <- var(time)
     sec[i] <- mean(time^2)
   }
   
   return(c(avg, var, sec))
-}
-
-oneWins <- function(row, col){
-  N <- row*col
-  condition <- FALSE
-  while(!condition){
-    states <- sample(c(replicate(N-1, 0),1), N, replace = FALSE)
-    nbhd <- matrix(data = states, nrow = row, ncol = col)
-    consensusT <- 0
-    percentOne <- numeric()
-    percentOne[1] <- (sum(nbhd == 1)/N)
-    k <- 2
-    while(TRUE){
-      
-      if(sum(nbhd) == 0){
-        break
-      }
-      if(sum(nbhd) == N){
-        condition <- TRUE
-        break
-      }
-      
-      # randomly select an individual
-      i <- sample(c(1:row), 1)
-      j <- sample(c(1:col), 1)
-      
-      # select a neighbor
-      lst <- neighbor(nbhd, i, j)
-      a <- lst[1]
-      b <- lst[2]
-      
-      nbhd[i,j] <- nbhd[a,b]
-      
-      percentOne[k] <- (sum(nbhd == 1)/N)
-      consensusT <- consensusT + 1
-      k <- k + 1
-    }
-  }
-  
-  return(percentOne)
 }
