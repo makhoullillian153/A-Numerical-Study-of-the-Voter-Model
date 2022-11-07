@@ -1,18 +1,9 @@
-# The following calculations are on the expected time to absorption of a 3x2 
-# classic voter model, and version 4 of the modified voter models.
-# The purpose of this calculation is to confirm the validity of the empirical 
-# results the algorithm produces, that way,
-# the algorithm may be revised to fit alternative models without concern for 
-# implementation error.
-# In terms of the modified version, we use these calculations to detect a 
-# pattern and possibly use to support a rigorous argument.
-
-# For reference of which states are associated with which value, see states.pdf
+# For reference of which states of the 3x2 model are associated with which value, 
+# see 3x2-states.png
 
 # Prerequisites
 source("Voter model simulations.R")
 
-# Extract Q matrix from our transition matrix
 Q <- matrix(data = # 3          # 5          # 7           # 9           # 11         # 13          # 15          # 17          # 19         # 21
    c(25/36, 0    , 0   , 3/36 , 0   , 0    , 2/36 , 0    , 0    , 0    , 0    , 0   , 0    , 0    , 0    , 0    , 0    , 0    , 0    , 0   , 0    , 0    , # 1
      0    , 11/18, 0   , 0    , 0   , 0    , 3/18 , 1/18 , 0    , 0    , 0    , 0   , 0    , 0    , 0    , 0    , 0    , 0    , 0    , 0   , 0    , 0    , # 2
@@ -39,33 +30,6 @@ Q <- matrix(data = # 3          # 5          # 7           # 9           # 11   
      ), byrow = TRUE, nrow = 22, ncol = 22)
 
 
-
-# Extract R matrix from our transition matrix
-R <- matrix(data = 
-              c( 6/36, 0,
-                 3/18, 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 0,
-                 0   , 3/18,
-                 0   , 6/36
-              ), byrow = TRUE, nrow = 22, ncol = 2)
-
 # Probability of starting at each possible state
 probabilities <- matrix(c(4/64, # 1
                           2/64, # 2
@@ -91,29 +55,22 @@ probabilities <- matrix(c(4/64, # 1
                           4/64  # 22
 ), byrow = FALSE, ncol = 22, nrow = 1)
 
-# Q and Probabilities matrices will be rearranged for symmetry and to match 
-# what is labeled in states.pdf
+# Q and probabilities matrices will be rearranged for symmetry and to match 
+# what is labeled in 3x2-states.png
 Q2 <- Q
 Q2[7,] <- Q[8,]
 Q2[8,] <- Q[7,]
-
 temp <- Q2
-
-
 Q2[,7] <- temp[,8]
 Q2[,8] <- temp[,7]
-
 Q <- Q2
-
 temp <- probabilities
-
 probabilities[,7] <- temp[,8]
 probabilities[,8] <- temp[,7]
 
-# Theoretical result
 ETC <- solve(diag(22) - Q) %*% rep(1,22)
-# mat <-solve(diag(22) - Q) %*% R
 
+# Theoretical result
 probabilities %*% ETC # 18.31765
 
 # Empirical result
@@ -129,16 +86,14 @@ Q2.2 <- matrix(data = c(1/2,0,1/4,1/4,
                         0,3/16,3/4,0,
                         0,3/16,0,3/4),ncol=4,nrow = 4,byrow = T)
 
-R2.2 <- matrix(data = c(0,0,
-                        0,0,
-                        1/16,0,
-                        0,1/16), ncol = 2, nrow = 4, byrow = T)
-
 ETC2.2 <- solve(diag(4) - Q2.2) %*% rep(1,4)
 
 prob2.2 <- matrix(data = c(2/16,4/16,4/16,4/16), ncol = 4, nrow =1)
 
+# Theoretical Result
 prob2.2 %*% ETC2.2 # 25.75
+
+# Empirical Result
 mean(noConsensus_time(2,2,100000)) # 25.69059
 
 # ----- #

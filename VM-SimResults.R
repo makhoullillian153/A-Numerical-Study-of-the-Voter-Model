@@ -1,6 +1,6 @@
 source("Voter model simulations.R")
 
-time1 <- VM(5,5,100)
+time1 <- VM(9,1,100)
 # result: 
 # mean: 788.8189
 # variance: 422908.7
@@ -22,10 +22,9 @@ x <- c(1:k)^2
 {
   # average
   plot1 <- ggplot(mapping = aes(1:15,avg)) + geom_point() +
-    geom_smooth(method = "lm", formula = y ~ I(x^2) + x) +
+    #geom_smooth(method = "lm", formula = y ~ I(x^2) + x) +
     xlab('Number of Columns') +
-    ylab("Average Time to Absorption") +
-    labs(title = "Fixed Number of Rows: 8")
+    ylab("Average Time to Absorption")
   
   plot1
   
@@ -61,13 +60,13 @@ x <- c(1:k)^2
   # log-log plots are all relatively linear
 }
 
-time2 <- CVM_marg(5,5,1000)
+time2 <- CVM_marg(8,10,1)
 # result:
 # mean: 1142.872
 # variance: 1085055
 # second moment: 2391102
 
-time3 <- CVM_extr(5,5,1000)
+time3 <- CVM_extr(8,10,1)
 # results:
 # mean: 1185.004
 # variance: 1164857
@@ -148,7 +147,7 @@ sec_e <- lst2[(5*k+1):(6*k)]
   lm6.2 <- lm(sec_e ~ poly(x,4, raw = TRUE)) # 
 }
 
-time4 <- VM_noBound(2,2,1000)
+time4 <- VM_noBound(3,3,1000)
 # results:
 # mean: 588.1 - faster
 # variance: 160875.8
@@ -173,7 +172,7 @@ x <- col.range
   plot7 <- ggplot(mapping = aes(1:15, avg_mod)) + 
     geom_point() +
     #geom_point(mapping = aes(1:15, avg), color = "red")+
-    geom_smooth(method = "lm", formula = y ~ x) +
+    #geom_smooth(method = "lm", formula = y ~ x) +
     xlab('Number of columns') +
     ylab("Average time to census")
   
@@ -572,36 +571,72 @@ plot27
 
 }
 
-plot28 <- ggplot(mapping = aes(x = c(51,106.1,186.56,5.9,18.1,42.4,133.4,302.4223),
-                               y = c(1300.5,10482.2,95457.29,26.1256,160,795,16897.84,))) +
-  geom_point()
+interiors <- c(0:4,0,0,0)
+maxD <- c(3,3,4,5,6,4,5,6)
+EC <- c(18 , 51     , 106.1, 186.56  , 302.4) # need 3x7,8
+EM <- c(160, 1263.61, 9666 , 83756.84, 722845.9) # need 3x7,8
+EC <- c(EC,42.4,78.4,133.4)
+EM <- c(EM,795,3681,16897)
 
-mean(VM(3,3,10000)^2) # ~51
+
+
+ggplot(mapping = aes(EC,EM)) + 
+  geom_point() +
+  geom_line(mapping = aes(y = gamma(interiors + 1)/2*EC^(2)-EC*(maxD^interiors))) + 
+  xlab( expression("E["*T[C]*"]") ) +
+  ylab( expression("E["*T[M]*"]") )
+
+ggplot(mapping = aes(log(EC),log(EM))) + 
+  geom_point() +
+  #geom_line(mapping = aes(y = gamma(interiors + 1)/2*EC^2)) +
+  xlab( expression("log(E["*T[C]*"])") ) +
+  ylab( expression("log(E["*T[M]*"])") )
+
+lm(log(EM) ~ log(EC)) # slope is 2.9
+lm(EM ~ poly(EC,3,raw=T))
+
+mean(VM(3,3,10000)) # 50.9
 mean(V4_time(3,3,1000)) # 1263.61
-#FOR 3x3
 # 51*51*(1/2) = 1300.5
+
+# next guess: EM = (I!/2)(EC^2)-EC*(max(D)^I)
+51*51*51/3-(51*51*3)
 
 mean(VM(3,4,20000)) # 106.1
 mean(V4_time(3,4,500)) # 9666.416
 # 106*106*(2/2) = 11,236
 
-mean(VM(3,5,5000)) # 186.56
-mean(V4_time(3,5,100)) # 95457.29
+106*106*(2/2) - 106*(4^2)
+
+mean(VM(3,5,10000)) # 186.56
+mean(V4_time(3,5,300)) # 83756.84
 # 186.6*186.6*(6/2) = 104,458
+
+186.6*186.6*(6/2) - 186.56*(5^3)
 
 mean(VM(3,6,10000)) # 302.4223
 mean(V4_time(3,6,500)) # 722845.9
 # 302.42*302.42*(24/2) = 1,097,494.28
 
-95457.29/(302.4*302.4)
+302.42*302.42*(24/2)-(302)*(6^(4))
+
+# next guess: EM = (I!/2)(EC^2)-EC*(max(D)^I)
+
+1097494-722845
+374649/302
+
+mean(VM(3,7,10000)) # 454.0221
+mean(V4_time(3,7,500)) # 719601.7
 
 mean(VM(2,2,10000)) # 5.9
-mean(V4_time(2,2,10000)) # 26.1256
+mean(V4_time(2,2,1000)) # 26.1256
 # 5.9*5.9*(3/4) = 26.1075
 
 mean(VM(3,2,10000)) # 18.1
 mean(V4_time(3,2,10000)) # 160
 #18.1*18.1*(1/2) = 163.805
+
+(18.1*18.1/2)-18.1
 
 mean(VM(2,1,10000)) # 0.5
 mean(V4_time(2,1,10000)) # 1
@@ -609,6 +644,55 @@ mean(V4_time(2,1,10000)) # 1
 
 mean(VM(2,4,10000)) # 42.4
 mean(V4_time(2,4,5000)) # 795
+# 42.4*42.4/2 = 898.88
+
+mean(VM(2,5,10000)) # 78.4233
+mean(V4_time(2,5,5000)) # 3681.061
+# 78.4*78.4/2 = 3073.28
 
 mean(VM(2,6,10000)) # 133.4
 mean(V4_time(2,6,50)) # 16897.84
+# 133.4*133.4 = 17795.6
+
+f <- function(interior,ETc){
+  return(gamma(interior + 1)*ETc^2/2)
+}
+
+integrate(f,lower = 0, upper = Inf)
+
+
+Redner <- function(N, rho){
+  T.rho <- c()
+  for(i in 1:length(rho)){
+    T.rho[i] <- -((1-rho[i])*log(1-rho[i])+rho[i]*log(rho[i]))*(N*log(N))
+  }
+  # boundary conditions:
+  T.rho[1] <- 0
+  T.rho[length(rho)] <- 0
+  return(T.rho)
+}
+
+
+
+avg <- numeric()
+var <- numeric()
+N <- 9
+
+for(i in 0:N){
+  print(i)
+  avg <- append(avg, mean(VM_complete(3, 3, 100000, pOne = fractions(i/N))))
+  var <- append(var, var(VM_complete(3, 3, 100000, pOne = fractions(i/N))))
+}
+
+
+empirical.result <- untitled(3,3,1000)
+theoretical.result <- Redner(9,0:9/9)
+plot28 <- ggplot() +
+  geom_point(mapping = aes(0:9, theoretical.result, color = "Calculated Result")) +
+  geom_errorbar(mapping = aes(x = 0:9, ymin = avg-sqrt(var), ymax = avg+sqrt(var)),color = 'red')+
+  geom_point(mapping = aes(0:9, avg, color = "Empirical Result")) +
+  xlab(expression(rho)) + 
+  ylab(expression("T("*rho*")")) +
+  scale_color_manual(name = "Legend", breaks = c("Calculated Result","Empirical Result"), 
+                     values = c("Calculated Result" = "black", "Empirical Result" = "red"))
+plot28

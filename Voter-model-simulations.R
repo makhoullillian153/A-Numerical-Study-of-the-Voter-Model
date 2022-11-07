@@ -1,4 +1,4 @@
-# prereqs
+# Prerequisites
 library(ggplot2)
 library(gganimate)
 library(gifski)
@@ -34,6 +34,10 @@ neighbor <- function(nbhd,i,j,boundaries = TRUE){
       }
     }
   } else {
+    index <- sample(1:4,1, replace = T)
+    a <- i + movements[[index]][1]
+    b <- j + movements[[index]][2]
+    
     if(a == 0){
       a <- nrow(nbhd)
     } 
@@ -86,16 +90,22 @@ VM <- function(row, col, s, pOne = 0.5){
       a <- lst[1]
       b <- lst[2]
       
-      nbhd[i,j] <- nbhd[a,b]
-      
-      consensusT[k] <- consensusT[k] + 1
+      if(nbhd[i,j] != nbhd[a,b]){
+        nbhd[i,j] <- nbhd[a,b]
+        consensusT[k] <- consensusT[k] + 1
+      }
     }
   }
   
   return(consensusT)
 }
 
-
+# Models the time to consensus of VM as a function over a number of columns
+# Parameters:
+  # fixed.row: Number of rows that will remain fixed through each simulation
+  # col.range: Range of columns
+# Returns: Average time to, variance of, second moment of each dimension 
+#          (3 vectors total)
 VM_func <- function(fixed.row, col.range){
   avg <- numeric()
   var <- numeric()
@@ -264,13 +274,13 @@ CVM_func <- function(fixed.row, col.range){
   # col: Number of columns
   # s: Number of observations
 # Returns: Time to consensus of each observation
-VM_noBound <- function(row,col,s){
+VM_noBound <- function(row,col,s, pOne = 0.5){
   
   N <- row*col
   consensusT <- numeric(s)
   
   for(k in 1:s){
-    states <- sample(c(0,1), N, replace = TRUE)
+    states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne,pOne))
     nbhd <- matrix(data = states, nrow = row, ncol = col)
     
     while(TRUE){
@@ -288,10 +298,10 @@ VM_noBound <- function(row,col,s){
       a <- lst[1]
       b <- lst[2]
       
-      nbhd[i,j] <- nbhd[a,b]
-      
-      
-      consensusT[k] <- consensusT[k] + 1
+      if(nbhd[i,j] != nbhd[a,b]){
+        nbhd[i,j] <- nbhd[a,b]
+        consensusT[k] <- consensusT[k] + 1
+      }
     }
   }
   
@@ -492,8 +502,8 @@ CVM_func_V2 <- function(fixed.row, col.range, change = 1){
 
 # ----- #
 
-# animating the classic voter model: special case 1
-# for fun
+# Animating the classic voter model: special case 1
+# For fun
 VM_anim_special_1 <- function(row = 8, col = 12){
   
   N <- row*col
@@ -536,8 +546,8 @@ VM_anim_special_1 <- function(row = 8, col = 12){
   animate(anim, renderer = gifski_renderer("Classic_Special_Case_1.gif", loop = FALSE))
 }
 
-# animating the classic voter model: special case 2
-# for fun
+# Animating the classic voter model: special case 2
+# For fun
 VM_anim_special_2 <- function(row = 8, col = 12){
   
   N <- row*col
@@ -693,7 +703,7 @@ VM_percents <- function(row,col, pOne = 0.5){
 # Returns: Time to consensus of each observation
 VM_diag <- function(row, col, s, pOne = 0.5){
   
-  neighbor <- function(nbhd,i,j){
+  neighborD <- function(nbhd,i,j){
     a <- 0
     b <- 0
     
@@ -702,22 +712,33 @@ VM_diag <- function(row, col, s, pOne = 0.5){
                       c(1,1),c(1,-1),c(-1,1),c(-1,-1))
     
     
-    index <- sample(1:8,1, replace = T)
-    a <- i + movements[[index]][1]
-    b <- j + movements[[index]][2]
+    while(a <= 0 | b <= 0){
+      index <- sample(1:8,1, replace = T)
+      a <- i + movements[[index]][1]
+      b <- j + movements[[index]][2]
+      
+      if( a > nrow(nbhd) | b > ncol(nbhd)){
+        a <- 0
+        b <- 0
+      }
+    }
     
-    if(a == 0){
-      a <- nrow(nbhd)
-    } 
-    if(a == nrow(nbhd) + 1){
-      a <- 1
-    }
-    if(b == 0){
-      b <- ncol(nbhd)
-    }
-    if(b == ncol(nbhd) + 1){
-      b <- 1
-    }
+    # index <- sample(1:8,1, replace = T)
+    # a <- i + movements[[index]][1]
+    # b <- j + movements[[index]][2]
+    # 
+    # if(a == 0){
+    #   a <- nrow(nbhd)
+    # } 
+    # if(a == nrow(nbhd) + 1){
+    #   a <- 1
+    # }
+    # if(b == 0){
+    #   b <- ncol(nbhd)
+    # }
+    # if(b == ncol(nbhd) + 1){
+    #   b <- 1
+    # }
     
     return(c(a,b))
   }
@@ -743,14 +764,14 @@ VM_diag <- function(row, col, s, pOne = 0.5){
       indiv <- nbhd[i,j]
       
       # select a neighbor
-      lst <- neighbor(nbhd, i, j)
+      lst <- neighborD(nbhd, i, j)
       a <- lst[1]
       b <- lst[2]
       
-      nbhd[i,j] <- nbhd[a,b]
-      
-      
-      consensusT[k] <- consensusT[k] + 1
+      if(nbhd[i,j] != nbhd[a,b]){
+        nbhd[i,j] <- nbhd[a,b]
+        consensusT[k] <- consensusT[k] + 1
+      }
     }
   }
   
@@ -946,8 +967,8 @@ CVM_func_V3 <- function(fixed.row, col.range){
   return(c(avg_m, var_m, sec_m, avg_e, var_e, sec_e))
 }
 
-# uses internal neighbor methods (no boundaries)
-# for fun
+# Uses internal neighbor methods (no boundaries)
+# For fun
 couplingVM <- function(row, col, pOne = 0.5){
   
   # select a neighbor using classic method: up/down/left/right
@@ -1200,7 +1221,7 @@ V4_time <- function(row, col, s, pOne = 0.5){
   # fixed.row: Number of rows that will remain fixed through each simulation
   # col.range: Range of columns
 # Returns: Average time to, variance of, second moment of each dimension 
-  #          (3 vectors total)
+#          (3 vectors total)
 V4_func <- function(fixed.row, col.range){
   avg <- numeric()
   var <- numeric()
@@ -1215,4 +1236,58 @@ V4_func <- function(fixed.row, col.range){
   }
   
   return(c(avg, var, sec))
+}
+
+VM_complete <- function(row, col, s, pOne = 0.5){
+  N <- row*col
+  consensusT <- numeric(s)
+  
+  for(k in 1:s){
+    states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne, pOne))
+    nbhd <- matrix(data = states, nrow = row, ncol = col)
+    
+    while(TRUE){
+      
+      if(sum(nbhd) == N | sum(nbhd) == 0){
+        break;
+      }
+      
+      # randomly select an individual
+      i <- sample(c(1:row), 1)
+      j <- sample(c(1:col), 1)
+      
+      # select a neighbor - complete graph
+      a <- sample(c(1:row), 1)
+      b <- sample(c(1:col), 1)
+      
+      if(nbhd[i,j] != nbhd[a,b]){
+        nbhd[i,j] <- nbhd[a,b]
+        consensusT[k] <- consensusT[k] + 1
+      }
+    }
+  }
+  
+  return(consensusT)
+}
+
+untitled <- function(row, col, s){
+  emp <- numeric()
+  N <- row*col
+  
+  for(i in 0:N){
+    print(i)
+    emp <- append(emp, mean(VM_complete(row, col, s, pOne = fractions(i/N))))
+  }
+  return(emp)
+}
+
+untitled2 <- function(row, col, s){
+  emp <- numeric()
+  N <- row*col
+  
+  for(i in 0:N){
+    print(i)
+    emp <- append(emp,mean(VM4_time(row, col, s, pOne = fractions(i/N))))
+  }
+  return(emp)
 }
