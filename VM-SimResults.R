@@ -472,6 +472,24 @@ plot24 <- ggplot(mapping = aes(x = 1:15)) +
 
 plot24
 
+# significance testing - marginal results
+# Check conditions
+
+var.test(avg_m_mod, avg_m_v3, alternative = "two.sided")$p.value
+var.test(avg_m_mod, avg_m8, alternative = "two.sided")$p.value
+var.test(avg_m_v3, avg_m8, alternative = "two.sided")$p.value
+# all p-values are small
+
+# 1 vs varies
+t.test(avg_m_mod, avg_m_v3, alternative = "two.sided")$p.value # significant (0.018)
+
+# 1 vs 0.5
+t.test(avg_m_mod, avg_m8, alternative = "two.sided")$p.value # insignificant (0.19)
+
+# varies vs 0.5
+t.test(avg_m_v3, avg_m8, alternative = "two.sided")$p.value # insignificant (0.07)
+
+
 plot25 <- ggplot(mapping = aes(x = 1:15)) + 
   geom_point(mapping = aes(y = avg_e_mod, color = "1")) +
   #geom_errorbar(aes(ymin = avg_e_mod-sqrt(var_e_mod), ymax= avg_e_mod+sqrt(var_e_mod), color = "1")) +
@@ -485,6 +503,23 @@ plot25 <- ggplot(mapping = aes(x = 1:15)) +
                      values = c("1" = "black", "Varies" = "green", "0.5" = "red"))
 
 plot25
+
+# significance testing - extremal results
+# Check conditions
+
+var.test(avg_e_mod, avg_e_v3, alternative = "two.sided")$p.value
+var.test(avg_e_mod, avg_e8, alternative = "two.sided")$p.value
+var.test(avg_e_v3, avg_e8, alternative = "two.sided")$p.value
+# all p-values are small
+
+# 1 vs varies
+t.test(avg_e_mod, avg_e_v3, alternative = "two.sided")$p.value # significant (0.008)
+
+# 1 vs 0.5
+t.test(avg_e_mod, avg_e8, alternative = "two.sided")$p.value # insignificant (0.13)
+
+# varies vs 0.5
+t.test(avg_e_v3, avg_e8, alternative = "two.sided")$p.value # significant (0.03)
 
 # now lets look at the coefficients of each model
 # these values really aren't that reliable with such a low number of observations
@@ -571,88 +606,37 @@ plot27
 
 }
 
-interiors <- c(0:4,0,0,0)
-maxD <- c(3,3,4,5,6,4,5,6)
-EC <- c(18 , 51     , 106.1, 186.56  , 302.4) # need 3x7,8
-EM <- c(160, 1263.61, 9666 , 83756.84, 722845.9) # need 3x7,8
-EC <- c(EC,42.4,78.4,133.4)
-EM <- c(EM,795,3681,16897)
+df <- read.csv("Model data - Sheet1.csv")
+VM.classic <- df$Classic.Time
+VM.modified <- df$Modified.Time
+VM.classic[11] <- 360.5
 
+VM.classic <- VM.classic[-9]
+VM.modified <- VM.modified[-9]
 
+plot(VM.classic[4:8], VM.modified[4:8])
 
-ggplot(mapping = aes(EC,EM)) + 
-  geom_point() +
-  geom_line(mapping = aes(y = gamma(interiors + 1)/2*EC^(2)-EC*(maxD^interiors))) + 
-  xlab( expression("E["*T[C]*"]") ) +
-  ylab( expression("E["*T[M]*"]") )
+# min 2
+plot29 <- ggplot(mapping = aes(x = log(VM.classic[1:4]), y = log(VM.modified[1:4]))) +
+  geom_point() + 
+  xlab(expression('log(T'[C]*')')) +
+  ylab(expression('log(T'[M]*')'))
+lm(log(VM.modified[1:4]) ~ log(VM.classic[1:4])) #2.322
 
-ggplot(mapping = aes(log(EC),log(EM))) + 
-  geom_point() +
-  #geom_line(mapping = aes(y = gamma(interiors + 1)/2*EC^2)) +
-  xlab( expression("log(E["*T[C]*"])") ) +
-  ylab( expression("log(E["*T[M]*"])") )
+# min 3
+plot30 <- ggplot(mapping = aes(x = log(VM.classic[5:8]), y = log(VM.modified[5:8]))) +
+  geom_point() + 
+  xlab(expression('log(T'[C]*')')) +
+  ylab(expression('log(T'[M]*')'))
+lm(log(VM.modified[5:8]) ~ log(VM.classic[5:8])) #3.555
 
-lm(log(EM) ~ log(EC)) # slope is 2.9
-lm(EM ~ poly(EC,3,raw=T))
-
-mean(VM(3,3,10000)) # 50.9
-mean(V4_time(3,3,1000)) # 1263.61
-# 51*51*(1/2) = 1300.5
-
-# next guess: EM = (I!/2)(EC^2)-EC*(max(D)^I)
-51*51*51/3-(51*51*3)
-
-mean(VM(3,4,20000)) # 106.1
-mean(V4_time(3,4,500)) # 9666.416
-# 106*106*(2/2) = 11,236
-
-106*106*(2/2) - 106*(4^2)
-
-mean(VM(3,5,10000)) # 186.56
-mean(V4_time(3,5,300)) # 83756.84
-# 186.6*186.6*(6/2) = 104,458
-
-186.6*186.6*(6/2) - 186.56*(5^3)
-
-mean(VM(3,6,10000)) # 302.4223
-mean(V4_time(3,6,500)) # 722845.9
-# 302.42*302.42*(24/2) = 1,097,494.28
-
-302.42*302.42*(24/2)-(302)*(6^(4))
-
-# next guess: EM = (I!/2)(EC^2)-EC*(max(D)^I)
-
-1097494-722845
-374649/302
-
-mean(VM(3,7,10000)) # 454.0221
-mean(V4_time(3,7,500)) # 719601.7
-
-mean(VM(2,2,10000)) # 5.9
-mean(V4_time(2,2,1000)) # 26.1256
-# 5.9*5.9*(3/4) = 26.1075
-
-mean(VM(3,2,10000)) # 18.1
-mean(V4_time(3,2,10000)) # 160
-#18.1*18.1*(1/2) = 163.805
-
-(18.1*18.1/2)-18.1
-
-mean(VM(2,1,10000)) # 0.5
-mean(V4_time(2,1,10000)) # 1
-# 0.5*0.5*4 = 1
-
-mean(VM(2,4,10000)) # 42.4
-mean(V4_time(2,4,5000)) # 795
-# 42.4*42.4/2 = 898.88
-
-mean(VM(2,5,10000)) # 78.4233
-mean(V4_time(2,5,5000)) # 3681.061
-# 78.4*78.4/2 = 3073.28
-
-mean(VM(2,6,10000)) # 133.4
-mean(V4_time(2,6,50)) # 16897.84
-# 133.4*133.4 = 17795.6
+# min 4
+# min 2
+plot31 <- ggplot(mapping = aes(x = log(VM.classic[10:11]), y = log(VM.modified[10:11]))) +
+  geom_point() + 
+  xlab(expression('log(T'[C]*')')) +
+  ylab(expression('log(T'[M]*')'))
+lm(log(VM.modified[10:11]) ~ log(VM.classic[10:11])) #4.775
 
 f <- function(interior,ETc){
   return(gamma(interior + 1)*ETc^2/2)
@@ -664,7 +648,7 @@ integrate(f,lower = 0, upper = Inf)
 Redner <- function(N, rho){
   T.rho <- c()
   for(i in 1:length(rho)){
-    T.rho[i] <- -((1-rho[i])*log(1-rho[i])+rho[i]*log(rho[i]))*(N*log(N))
+    T.rho[i] <- -((1-rho[i])*log(1-rho[i])+rho[i]*log(rho[i]))*N*N
   }
   # boundary conditions:
   T.rho[1] <- 0
@@ -672,7 +656,9 @@ Redner <- function(N, rho){
   return(T.rho)
 }
 
+lm(log(V4.point) ~ VM.point)
 
+plot(log(VM.point),log(V4.point))
 
 avg <- numeric()
 var <- numeric()
@@ -685,12 +671,12 @@ for(i in 0:N){
 }
 
 
-empirical.result <- untitled(3,3,1000)
+empirical.result <- VM_complete_func(3,3,10000)
 theoretical.result <- Redner(9,0:9/9)
 plot28 <- ggplot() +
   geom_point(mapping = aes(0:9, theoretical.result, color = "Calculated Result")) +
-  geom_errorbar(mapping = aes(x = 0:9, ymin = avg-sqrt(var), ymax = avg+sqrt(var)),color = 'red')+
-  geom_point(mapping = aes(0:9, avg, color = "Empirical Result")) +
+  #geom_errorbar(mapping = aes(x = 0:9, ymin = avg-sqrt(var), ymax = avg+sqrt(var)),color = 'red')+
+  geom_point(mapping = aes(0:9, empirical.result, color = "Empirical Result")) +
   xlab(expression(rho)) + 
   ylab(expression("T("*rho*")")) +
   scale_color_manual(name = "Legend", breaks = c("Calculated Result","Empirical Result"), 
