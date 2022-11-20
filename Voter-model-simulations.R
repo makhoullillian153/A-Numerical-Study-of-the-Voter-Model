@@ -1187,6 +1187,7 @@ V4_time <- function(row, col, s, pOne = 0.5){
   N <- row*col
   consensusT <- numeric(s)
   for(k in 1:s){
+    print(k)
     states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne,pOne))
     nbhd <- matrix(data = states, nrow = row, ncol = col)
     
@@ -1210,7 +1211,7 @@ V4_time <- function(row, col, s, pOne = 0.5){
         nbhd[i,j] <- nbhd[a,b]
       }
       
-      consensusT[k] <- consensusT[k] + 1 
+      consensusT[k] <- consensusT[k] + 1
     }
   }
   return(consensusT)
@@ -1238,6 +1239,38 @@ V4_func <- function(fixed.row, col.range){
   return(c(avg, var, sec))
 }
 
+V4_complete <- function(row, col, s, pOne = 0.5){
+  N <- row*col
+  consensusT <- numeric(s)
+  for(k in 1:s){
+    states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne,pOne))
+    nbhd <- matrix(data = states, nrow = row, ncol = col)
+    
+    while(TRUE){
+      pChange <- c(sum(nbhd == 0)/N, sum(nbhd == 1)/N)
+      
+      if(sum(nbhd) == N | sum(nbhd) == 0){
+        break
+      }
+      
+      # randomly select an individual
+      i <- sample(c(1:row), 1)
+      j <- sample(c(1:col), 1)
+      
+      # randomly select a neighbor
+      a <- sample(c(1:row), 1)
+      b <- sample(c(1:col), 1)
+      
+      if(pChange[nbhd[i,j] + 1] > runif(1)){
+        nbhd[i,j] <- nbhd[a,b]
+      }
+      consensusT[k] <- consensusT[k] + 1
+    }
+  }
+  return(consensusT)
+}
+
+
 VM_complete <- function(row, col, s, pOne = 0.5){
   N <- row*col
   consensusT <- numeric(s)
@@ -1249,7 +1282,7 @@ VM_complete <- function(row, col, s, pOne = 0.5){
     while(TRUE){
       
       if(sum(nbhd) == N | sum(nbhd) == 0){
-        break;
+        break
       }
       
       # randomly select an individual
@@ -1262,21 +1295,21 @@ VM_complete <- function(row, col, s, pOne = 0.5){
       
       if(nbhd[i,j] != nbhd[a,b]){
         nbhd[i,j] <- nbhd[a,b]
-        consensusT[k] <- consensusT[k] + 1
       }
+      consensusT[k] <- consensusT[k] + 1
     }
   }
   
   return(consensusT)
 }
 
-untitled <- function(row, col, s){
+VM_complete_func <- function(row, col, s){
   emp <- numeric()
   N <- row*col
   
   for(i in 0:N){
     print(i)
-    emp <- append(emp, mean(VM_complete(row, col, s, pOne = fractions(i/N))))
+    emp <- append(emp, mean(VM_complete(row, col, s, pOne = i/N)))
   }
   return(emp)
 }
