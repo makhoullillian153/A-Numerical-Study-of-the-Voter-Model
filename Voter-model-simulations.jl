@@ -17,7 +17,7 @@ function neighbor(nbhd,i,j,boundaries = true)
             a = movements[index,1]
             b = movements[index,2]
 
-            if a > size(nbhd)[1] || a > size(nbhd)[2]
+            if a > size(nbhd)[1] || b > size(nbhd)[2]
                 a = 0
                 b = 0
             end
@@ -47,11 +47,10 @@ end
 function V4(row, col, s, pOne = 0.5)
     
     N = row*col
-    consensusT = Vector{Int128}
+    consensusT = [0 for z in 1:s]
     for k in 1:s
         states = sample([0,1], weights([1-pOne,pOne]) , N)
-        nbhd = reshape(states, row,col)
-
+        nbhd = reshape(states, row, col)
         while true
             pChange = [N-sum(nbhd)/N, sum(nbhd)/N]
 
