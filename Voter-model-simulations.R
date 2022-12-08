@@ -950,8 +950,8 @@ CVM_func_V3 <- function(fixed.row, col.range){
   
   for(i in col.range){
     print(i)
-    time_m <- CVM_marg_V3(fixed.row, i, 1000)
-    time_e <- CVM_extr_V3(fixed.row, i, 1000)
+    time_m <- CVM_marg_V3(fixed.row, i, 2500)
+    time_e <- CVM_extr_V3(fixed.row, i, 2500)
     avg_m[i] <- mean(time_m)
     avg_e[i] <- mean(time_e)
     

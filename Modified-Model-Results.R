@@ -70,16 +70,14 @@ mean(V4_time(3,6,500)) # 722845.9
 
 # mean(VM_complete(3,7,10000))
 mean(VM(3,7,10000)) # 454.0221
-mean(V4_time(3,7,500)) # 719601.7
-
-(454*454*60)-(454*7^5)
+mean(V4_time(3,7,750)) # 6100133
 
 ## Minimum dimension 4
 
 mean(VM(4,4,10000)) # 206.976
 mean(V4_time(4,4,1000)) # 144260
 
-mean(VM(4,5,10000)) # 85.8
+mean(VM(4,5,10000)) # 364.2978
 mean(V4_time(4,5,1000)) # 2272649
 
 mean(VM(4,6,10000)) # 560.2132
@@ -91,3 +89,41 @@ mean(VM(4,7,10000)) # 826.2581
 mean(VM(5,5,10000)) # 606.671
 
 mean(VM(5,6,10000)) # 937.198
+
+df <- read.csv("Model data - Sheet1.csv")
+VM.classic <- df$Classic.Time
+VM.modified <- df$Modified.Time
+VM.classic[11] <- 364.2978
+VM.modified[9] <- 6100133
+
+plot(VM.classic,VM.modified)
+plot(VM.classic,log(VM.modified))
+points(VM.classic, 6.154987 + 0.02335*VM.classic, col = "red")
+
+plot(log(VM.classic),log(log(VM.modified)))
+
+plot32 <- ggplot(mapping = aes(VM.classic, VM.modified)) +
+  geom_point() +
+  xlab(expression('T'[C])) +
+  ylab(expression('T'[M]))
+
+plot32
+
+lm(log(VM.modified[1:4]) ~ log(VM.classic[1:4])) #slope: 2.322
+lm(log(VM.modified[5:9]) ~ log(VM.classic[5:9])) #slope: 3.870
+lm(log(VM.modified[10:11]) ~ log(VM.classic[10:11])) #slope: 4.775
+
+plot29 <- ggplot(mapping = aes(x = log(VM.classic[1:4]), y = log(VM.modified[1:4]))) +
+  geom_point() + 
+  xlab(expression('log(T'[C]*')')) +
+  ylab(expression('log(T'[M]*')'))
+
+plot30 <- ggplot(mapping = aes(x = log(VM.classic[5:9]), y = log(VM.modified[5:9]))) +
+  geom_point() + 
+  xlab(expression('log(T'[C]*')')) +
+  ylab(expression('log(T'[M]*')'))
+
+plot31 <- ggplot(mapping = aes(x = log(VM.classic[10:11]), y = log(VM.modified[10:11]))) +
+  geom_point() + 
+  xlab(expression('log(T'[C]*')')) +
+  ylab(expression('log(T'[M]*')'))

@@ -2,7 +2,7 @@
 # see 3x2-states.png
 
 # Prerequisites
-source("Voter model simulations.R")
+source("Voter-model-simulations.R")
 
 Q <- matrix(data = # 3          # 5          # 7           # 9           # 11         # 13          # 15          # 17          # 19         # 21
    c(25/36, 0    , 0   , 3/36 , 0   , 0    , 2/36 , 0    , 0    , 0    , 0    , 0   , 0    , 0    , 0    , 0    , 0    , 0    , 0    , 0   , 0    , 0    , # 1
