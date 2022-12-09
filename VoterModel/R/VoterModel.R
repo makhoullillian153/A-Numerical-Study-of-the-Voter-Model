@@ -652,19 +652,17 @@ myModified_time <- function(row, col, s, pOne = 0.5){
 
 #' @title Classic model on a complete graph
 #' @description Looks at the classic voter model, but on a complete graph, rather than a square lattice graph.
-#' @param row Number of rows
-#' @param col Number of columns
+#' @param N Number of individuals in population
 #' @param s Number of observations
 #' @param pOne Probability that a spot in the matrix is initialized with '1'. Default is 0.5
 #' @return Time to consensus of each observation
 #' @export
-VM_complete <- function(row, col, s, pOne = 0.5){
-  N <- row*col
+VM_complete <- function(N, s, pOne = 0.5){
   consensusT <- numeric(s)
 
   for(k in 1:s){
     states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne, pOne))
-    nbhd <- matrix(data = states, nrow = row, ncol = col)
+    nbhd <- matrix(data = states, nrow = 1, ncol = N)
 
     while(TRUE){
 
@@ -673,16 +671,12 @@ VM_complete <- function(row, col, s, pOne = 0.5){
       }
 
       # randomly select an individual
-      i <- sample(c(1:row), 1)
-      j <- sample(c(1:col), 1)
+      i <- sample(1:N, 1)
 
       # select a neighbor - complete graph
-      a <- sample(c(1:row), 1)
-      b <- sample(c(1:col), 1)
+      n <- sample(c(1:N)[-i], 1)
 
-      if(nbhd[i,j] != nbhd[a,b]){
-        nbhd[i,j] <- nbhd[a,b]
-      }
+      nbhd[1,i] <- nbhd[1,n]
       consensusT[k] <- consensusT[k] + 1
     }
   }

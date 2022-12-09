@@ -104,8 +104,8 @@ VM <- function(row, col, s, pOne = 0.5){
 # Parameters:
   # fixed.row: Number of rows that will remain fixed through each simulation
   # col.range: Range of columns
-# Returns: Average time to, variance of, second moment of each dimension 
-#          (3 vectors total)
+# Returns: Average of, variance of, second moment of consensus of each 
+#          dimension (3 vectors total)
 VM_func <- function(fixed.row, col.range){
   avg <- numeric()
   var <- numeric()
@@ -238,8 +238,8 @@ CVM_extr <- function(row, col, s){
   # fixed.row: Number of rows that will remain fixed through each simulation
   # col.range: Range of columns. Each will be used twice: once in marginal, and 
   #            once in extremal case.
-# Returns: Average time to, variance of, second moment of each dimension, for 
-#          both marginal and extremal cases (6 vectors total)
+# Returns: Average of, variance of, second moment of consensus of each 
+# dimension, for both marginal and extremal cases (6 vectors total)
 CVM_func <- function(fixed.row, col.range){
   avg_m <- numeric()
   avg_e <- numeric()
@@ -313,8 +313,8 @@ VM_noBound <- function(row,col,s, pOne = 0.5){
 # Parameters:
   # fixed.row: Number of rows that will remain fixed through each simulation
   # col.range: Range of columns
-# Returns: Average time to, variance of, second moment of each dimension 
-#          (3 vectors total)
+# Returns: Average of, variance of, second moment of consensus of each 
+#          dimension (3 vectors total)
 VM_func_noBound <- function(fixed.row, col.range){
   avg <- numeric()
   var <- numeric()
@@ -473,8 +473,8 @@ CVM_extr_V2 <- function(row, col, s, change = 1){
   # change: Probability that an individual will be convinced by a confident 
   #         neighbor (constant for each individual)
   #         Default is 1
-# Returns: Average time to, variance of, second moment of each dimension, for 
-#          both marginal and extremal cases (6 vectors total)
+# Returns: Average of, variance of, second moment of consensus of each 
+#          dimension, for both marginal and extremal cases (6 vectors total)
 CVM_func_V2 <- function(fixed.row, col.range, change = 1){
   avg_m <- numeric()
   avg_e <- numeric()
@@ -783,8 +783,8 @@ VM_diag <- function(row, col, s, pOne = 0.5){
 # Parameters:
   # fixed.row: Number of rows that will remain fixed through each simulation
   # col.range: Range of columns
-# Returns: Average time to, variance of, second moment of each dimension 
-#          (3 vectors total)
+# Returns: Average of, variance of, second moment of consensus of 
+#          each dimension (3 vectors total)
 VM_diag_func <- function(fixed.row, col.range){
   avg <- numeric()
   var <- numeric()
@@ -938,8 +938,8 @@ CVM_extr_V3 <- function(row, col, s, pOne = 0.5){
   # fixed.row: Number of rows that will remain fixed through each simulation
   # col.range: Range of columns. Each will be used twice: once in marginal, and 
   #            once in extremal case.
-# Returns: Average time to, variance of, second moment of each dimension, for 
-#          both marginal and extremal cases (6 vectors total)
+# Returns: Average of, variance of, second moment of consensus of each 
+#          dimension, for both marginal and extremal cases (6 vectors total)
 CVM_func_V3 <- function(fixed.row, col.range){
   avg_m <- numeric()
   avg_e <- numeric()
@@ -1132,7 +1132,7 @@ couplingVM <- function(row, col, pOne = 0.5){
   # pOne: Probability that a spot in the matrix is initialized with '1'
   #       Default is 0.5
 # Returns: Percent of population labeled "1" throughout the observation
-V4_percent <- function(row, col){
+myModified_percent <- function(row, col){
   
   N <- row*col
   percentOne<- numeric()
@@ -1183,11 +1183,10 @@ V4_percent <- function(row, col){
   # pOne: Probability that a spot in the matrix is initialized with '1'
   #       Default is 0.5
 # Returns: Time to consensus of each observation
-V4_time <- function(row, col, s, pOne = 0.5){
+myModified_time <- function(row, col, s, pOne = 0.5){
   N <- row*col
   consensusT <- numeric(s)
   for(k in 1:s){
-    print(k)
     states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne,pOne))
     nbhd <- matrix(data = states, nrow = row, ncol = col)
     
@@ -1217,20 +1216,20 @@ V4_time <- function(row, col, s, pOne = 0.5){
   return(consensusT)
 }
 
-# Models the time to consensus of VM_4 as a function over a number of columns
+# Models the time to consensus of myModified_time as a function over a number of columns
 # Parameters:
   # fixed.row: Number of rows that will remain fixed through each simulation
   # col.range: Range of columns
-# Returns: Average time to, variance of, second moment of each dimension 
-#          (3 vectors total)
-V4_func <- function(fixed.row, col.range){
+# Returns: Average of, variance of, second moment of consensus of each  
+#          dimension (3 vectors total)
+myModified_func <- function(fixed.row, col.range){
   avg <- numeric()
   var <- numeric()
   sec <- numeric()
   
   for(i in col.range){
     print(i)
-    time <- V4_time(fixed.row, i, 10000)
+    time <- myModified_time(fixed.row, i, 10000)
     avg[i] <- mean(time)
     var[i] <- var(time)
     sec[i] <- mean(time^2)
@@ -1239,7 +1238,17 @@ V4_func <- function(fixed.row, col.range){
   return(c(avg, var, sec))
 }
 
-V4_complete <- function(row, col, s, pOne = 0.5){
+
+# Looks at m modified model, but on a complete graph, rather than a 
+# square lattice graph.
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+  # pOne: Probability that a spot in the matrix is initialized with '1'. 
+  #       Default is 0.5
+# Returns: Time to consensus of each observation
+myModified_complete <- function(row, col, s, pOne = 0.5){
   N <- row*col
   consensusT <- numeric(s)
   for(k in 1:s){
@@ -1270,14 +1279,21 @@ V4_complete <- function(row, col, s, pOne = 0.5){
   return(consensusT)
 }
 
-
-VM_complete <- function(row, col, s, pOne = 0.5){
-  N <- row*col
+# Looks at the classic voter model, but on a complete graph, rather than a 
+# square lattice graph.
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+  # pOne: Probability that a spot in the matrix is initialized with '1'. 
+  #       Default is 0.5
+# Returns: Time to consensus of each observation
+VM_complete <- function(N, s, pOne = 0.5){
   consensusT <- numeric(s)
   
   for(k in 1:s){
     states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne, pOne))
-    nbhd <- matrix(data = states, nrow = row, ncol = col)
+    nbhd <- matrix(data = states, nrow = 1, ncol = N)
     
     while(TRUE){
       
@@ -1286,41 +1302,37 @@ VM_complete <- function(row, col, s, pOne = 0.5){
       }
       
       # randomly select an individual
-      i <- sample(c(1:row), 1)
-      j <- sample(c(1:col), 1)
+      i <- sample(1:N, 1)
       
       # select a neighbor - complete graph
-      a <- sample(c(1:row), 1)
-      b <- sample(c(1:col), 1)
-      
-      if(nbhd[i,j] != nbhd[a,b]){
-        nbhd[i,j] <- nbhd[a,b]
+      n <- i
+      while(n == i){
+        n <- sample(1:N, 1)
       }
-      consensusT[k] <- consensusT[k] + 1
+      
+      
+        nbhd[1,i] <- nbhd[1,n]
+        consensusT[k] <- consensusT[k] + 1
+      
     }
   }
   
   return(consensusT)
 }
 
-VM_complete_func <- function(row, col, s){
+# Models the time to consensus of VM_complete as a function over the initial 
+# density of agreeing voters.
+# Parameters:
+  # row: Number of rows
+  # col: Number of columns
+  # s: Number of observations
+# Returns: Average time to consensus of each intial density (3 vectors total)
+VM_complete_func <- function(N, s){
   emp <- numeric()
-  N <- row*col
   
   for(i in 0:N){
     print(i)
-    emp <- append(emp, mean(VM_complete(row, col, s, pOne = i/N)))
-  }
-  return(emp)
-}
-
-untitled2 <- function(row, col, s){
-  emp <- numeric()
-  N <- row*col
-  
-  for(i in 0:N){
-    print(i)
-    emp <- append(emp,mean(VM4_time(row, col, s, pOne = fractions(i/N))))
+    emp <- append(emp, mean(VM_complete(N, s, pOne = i/N)))
   }
   return(emp)
 }
