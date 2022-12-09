@@ -1,5 +1,5 @@
 # This file will allow us to generate a transition matrix of any size model without
-# running calculating anything by hand.
+# calculating anything by hand.
 
 # Prerequisites
 source("Voter-model-simulations.R")
@@ -14,6 +14,9 @@ states <- function(row, col){
   possibilities <- matrix(data = c(rep(0,N),rep(1,N)), ncol = N, nrow = 2, byrow = TRUE)
   
   while(nrow(possibilities) < 2^N){
+    if(nrow(possibilities) %% 1000 == 0){
+      print(nrow(possibilities))
+    }
     temp <- sample(c(0,1), N, replace = TRUE)
 
     # check if state already exists in data frame
@@ -109,7 +112,7 @@ transitionMatrix.Modified <- function(row,col){
   states.matrix <- states(row,col)
   nr <- nrow(states.matrix)
   N <- row*col
-  n <- 1000000
+  n <- 10000
   
   # find transition probabilities for first state to initialize t.matrix
   s0 <- matrix(data = states.matrix[1,], ncol = col, nrow = row, byrow = T)
@@ -198,9 +201,3 @@ calculate <- function(t.matrix){
 
 # -- for 3x2 matrix -- #
 # calculate(transitionMatrix.Modified(3,2)) # 134 (by-hand computation: 160.3006)
-
-# notes:
-  # it takes a while to generate the transition matrix because of the number of states
-  # and the value of 'n' in the function 'transitionMatrix.Classic'. lowering 'n'
-  # will yield computations with greater variability. the best way to make it more
-  # efficient is to teach the algorithm to detect symmetrical shapes.
