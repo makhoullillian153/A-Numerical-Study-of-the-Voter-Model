@@ -621,7 +621,6 @@ myModified_time <- function(row, col, s, pOne = 0.5){
   N <- row*col
   consensusT <- numeric(s)
   for(k in 1:s){
-    print(k)
     states <- sample(c(0,1), N, replace = TRUE, prob = c(1-pOne,pOne))
     nbhd <- matrix(data = states, nrow = row, ncol = col)
 
