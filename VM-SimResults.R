@@ -413,7 +413,7 @@ fixed.row <- 8
 k <- 15
 col.range <- 1:k
 
-lst7 <- my_conf_func(fixed.row,col.range)
+lst7 <- CVM_func_V3(fixed.row,col.range)
 
 avg_m_v3 <- lst7[1:k]
 var_m_v3 <- lst7[(k+1):(2*k)]
@@ -606,38 +606,6 @@ plot27
 
 }
 
-df <- read.csv("Model data - Sheet1.csv")
-VM.classic <- df$Classic.Time
-VM.modified <- df$Modified.Time
-VM.classic[11] <- 360.5
-
-VM.classic <- VM.classic[-9]
-VM.modified <- VM.modified[-9]
-
-plot(VM.classic[4:8], VM.modified[4:8])
-
-# min 2
-plot29 <- ggplot(mapping = aes(x = log(VM.classic[1:4]), y = log(VM.modified[1:4]))) +
-  geom_point() + 
-  xlab(expression('log(T'[C]*')')) +
-  ylab(expression('log(T'[M]*')'))
-lm(log(VM.modified[1:4]) ~ log(VM.classic[1:4])) #2.322
-
-# min 3
-plot30 <- ggplot(mapping = aes(x = log(VM.classic[5:8]), y = log(VM.modified[5:8]))) +
-  geom_point() + 
-  xlab(expression('log(T'[C]*')')) +
-  ylab(expression('log(T'[M]*')'))
-lm(log(VM.modified[5:8]) ~ log(VM.classic[5:8])) #3.555
-
-# min 4
-# min 2
-plot31 <- ggplot(mapping = aes(x = log(VM.classic[10:11]), y = log(VM.modified[10:11]))) +
-  geom_point() + 
-  xlab(expression('log(T'[C]*')')) +
-  ylab(expression('log(T'[M]*')'))
-lm(log(VM.modified[10:11]) ~ log(VM.classic[10:11])) #4.775
-
 f <- function(interior,ETc){
   return(gamma(interior + 1)*ETc^2/2)
 }
@@ -648,7 +616,7 @@ integrate(f,lower = 0, upper = Inf)
 Redner <- function(N, rho){
   T.rho <- c()
   for(i in 1:length(rho)){
-    T.rho[i] <- -((1-rho[i])*log(1-rho[i])+rho[i]*log(rho[i]))*N*N
+    T.rho[i] <- -((1-rho[i])*log(1-rho[i])+rho[i]*log(rho[i]))*N*log(N)
   }
   # boundary conditions:
   T.rho[1] <- 0
@@ -656,22 +624,7 @@ Redner <- function(N, rho){
   return(T.rho)
 }
 
-lm(log(V4.point) ~ VM.point)
-
-plot(log(VM.point),log(V4.point))
-
-avg <- numeric()
-var <- numeric()
-N <- 9
-
-for(i in 0:N){
-  print(i)
-  avg <- append(avg, mean(VM_complete(3, 3, 100000, pOne = fractions(i/N))))
-  var <- append(var, var(VM_complete(3, 3, 100000, pOne = fractions(i/N))))
-}
-
-
-empirical.result <- VM_complete_func(3,3,10000)
+empirical.result <- VM_complete_func(9,2500)
 theoretical.result <- Redner(9,0:9/9)
 plot28 <- ggplot() +
   geom_point(mapping = aes(0:9, theoretical.result, color = "Calculated Result")) +
