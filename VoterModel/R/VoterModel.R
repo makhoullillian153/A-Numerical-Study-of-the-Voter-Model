@@ -686,18 +686,16 @@ VM_complete <- function(N, s, pOne = 0.5){
 
 #' @title VM_complete_func
 #' @description Models the time to consensus of VM_complete as a function over the initial density of agreeing voters.
-#' @param row Number of rows
-#' @param col Number of columns
+#' @param N Number of individuals in population
 #' @param s Number of observations
 #' @return Average time to consensus of each initial density
 #' @export
-VM_complete_func <- function(row, col, s){
+VM_complete_func <- function(N, s){
   emp <- numeric()
-  N <- row*col
 
   for(i in 0:N){
     print(i)
-    emp <- append(emp, mean(VM_complete(row, col, s, pOne = i/N)))
+    emp <- append(emp, mean(VM_complete(N, s, pOne = i/N)))
   }
   return(emp)
 }

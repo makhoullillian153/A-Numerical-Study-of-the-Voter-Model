@@ -1282,8 +1282,7 @@ myModified_complete <- function(row, col, s, pOne = 0.5){
 # Looks at the classic voter model, but on a complete graph, rather than a 
 # square lattice graph.
 # Parameters:
-  # row: Number of rows
-  # col: Number of columns
+  # N: Number of individuals
   # s: Number of observations
   # pOne: Probability that a spot in the matrix is initialized with '1'. 
   #       Default is 0.5
@@ -1323,10 +1322,9 @@ VM_complete <- function(N, s, pOne = 0.5){
 # Models the time to consensus of VM_complete as a function over the initial 
 # density of agreeing voters.
 # Parameters:
-  # row: Number of rows
-  # col: Number of columns
+  # N: Number of individuals
   # s: Number of observations
-# Returns: Average time to consensus of each intial density (3 vectors total)
+# Returns: Average time to consensus of each initial density
 VM_complete_func <- function(N, s){
   emp <- numeric()
   
