@@ -4,6 +4,8 @@ editor_options:
     wrap: 72
 ---
 
+This repository was cloned from the github account I used in college (lem224).
+
 ## Voter-model-simulations.R
 
 ### `Neighbor`
