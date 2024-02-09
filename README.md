@@ -6,6 +6,8 @@ editor_options:
 
 This repository was cloned from the github account I used in college (lem224).
 
+The following files include code that was used to generate and visualize results for the final report (Final Report.pdf).
+
 ## Voter-model-simulations.R
 
 ### `Neighbor`
