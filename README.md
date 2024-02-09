@@ -436,7 +436,7 @@ initial density of agreeing voters.
 
 An R package including the functions used to generate results for my
 report. To install, use
-`devtools::install_github("lem224/Math-374/VoterModel")`.
+`devtools::install_github("makhoullillian153/A-Numerical-Study-of-the-Voter-Model/VoterModel")`.
 
 Functions included:
 
